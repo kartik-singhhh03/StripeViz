@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Activity, ArrowLeft, RotateCcw, XCircle } from "lucide-react";
+import { ArrowLeft, RotateCcw, ExternalLink } from "lucide-react";
+import { Logo } from "@/components/Logo";
 
 export default function Refund() {
   return (
@@ -8,9 +9,7 @@ export default function Refund() {
       <nav className="sticky top-0 z-50 w-full border-b border-[var(--border-subtle)] bg-[var(--bg-base)]/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4 sm:px-6">
           <Link to="/" className="flex items-center gap-2 sm:gap-3">
-            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 shadow-lg shadow-purple-500/30">
-              <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-            </div>
+            <Logo size={36} />
             <span className="text-lg sm:text-xl font-bold text-[var(--text-primary)]">StripeViz</span>
           </Link>
           <Link 
@@ -31,123 +30,158 @@ export default function Refund() {
             <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
               <RotateCcw className="w-5 h-5 text-purple-400" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)]">Refund & Cancellation Policy</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)]">Refund Policy</h1>
           </div>
           <p className="text-[var(--text-muted)] text-sm">
-            Last updated: December 24, 2025
+            Last updated: December 25, 2025
           </p>
         </div>
 
         {/* Content */}
         <div className="space-y-8 text-[var(--text-secondary)] leading-relaxed">
-          {/* Overview */}
+          {/* Merchant of Record */}
           <section>
-            <h2 className="text-lg sm:text-xl font-semibold text-[var(--text-primary)] mb-4">Overview</h2>
-            <p className="mb-4">
-              We want you to be completely satisfied with StripeViz. This policy explains how refunds and 
-              cancellations work for our subscription service. We aim to be fair and transparent—no hidden 
-              conditions, no surprises.
-            </p>
-            <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-[var(--text-primary)] mb-4">Merchant of Record</h2>
+            <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4 sm:p-6 mb-4">
               <p className="text-sm">
-                <strong className="text-[var(--text-primary)]">Merchant of Record:</strong> All payments and refunds 
-                are processed by <strong className="text-purple-400">Paddle</strong>, our authorized payment provider. 
-                Paddle handles billing, taxes, and payment processing on our behalf.
+                All payments for StripeViz are processed by <strong className="text-purple-400">Paddle.com Market Limited</strong> (Paddle), 
+                who acts as our Merchant of Record. This means Paddle is responsible for handling all billing, payment processing, 
+                invoicing, and refunds on our behalf.
               </p>
             </div>
+            <p>
+              When you make a purchase, your transaction is processed directly by Paddle. As such, all refund requests 
+              are handled by Paddle in accordance with their policies.
+            </p>
           </section>
 
           {/* Refund Policy */}
           <section>
             <h2 className="text-lg sm:text-xl font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
               <RotateCcw className="w-5 h-5 text-purple-400" />
-              Refund Policy
+              Refunds
             </h2>
-            
-            <h3 className="font-semibold text-[var(--text-primary)] mt-6 mb-3">14-Day Money-Back Guarantee</h3>
             <p className="mb-4">
-              If you're not satisfied with StripeViz, you can request a full refund within 
-              <strong className="text-[var(--text-primary)]"> 14 days</strong> of your initial purchase or renewal.
+              Since Paddle is our Merchant of Record, all refunds are subject to Paddle's refund policies as outlined 
+              in their Invoiced Consumer Terms. Paddle handles refund requests fairly and in accordance with applicable 
+              consumer protection laws.
             </p>
+            <p className="mb-4">
+              If you would like to request a refund, please contact Paddle directly or reach out to us and we will 
+              assist you in processing your request through Paddle.
+            </p>
+          </section>
 
-            <div className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl p-4 sm:p-6 my-6">
-              <h4 className="font-semibold text-[var(--text-primary)] mb-3">Refund Eligibility</h4>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-start gap-2">
-                  <span className="text-emerald-400 mt-1">✓</span>
-                  <span>Request made within 14 days of payment</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-emerald-400 mt-1">✓</span>
-                  <span>First refund request for your account</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-emerald-400 mt-1">✓</span>
-                  <span>No abuse of the refund policy detected</span>
-                </li>
-              </ul>
+          {/* Paddle Terms */}
+          <section>
+            <h2 className="text-lg sm:text-xl font-semibold text-[var(--text-primary)] mb-4">Paddle Invoiced Consumer Terms</h2>
+            <p className="mb-4">
+              Your purchase and any refund requests are governed by Paddle's Invoiced Consumer Terms. We encourage you 
+              to review these terms to understand your rights as a consumer.
+            </p>
+            <div className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl p-4 sm:p-6">
+              <p className="text-sm mb-4">
+                For complete details on Paddle's refund policies and your consumer rights, please review:
+              </p>
+              <a 
+                href="https://www.paddle.com/legal/invoiced-consumer-terms" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 transition-colors"
+              >
+                Paddle Invoiced Consumer Terms
+                <ExternalLink className="w-4 h-4" />
+              </a>
             </div>
-
-            <h3 className="font-semibold text-[var(--text-primary)] mt-6 mb-3">Monthly Subscriptions</h3>
-            <ul className="space-y-2 ml-4 mb-4">
-              <li className="flex items-start gap-2">
-                <span className="text-purple-400 mt-1">•</span>
-                <span>Full refund available within 14 days of each billing cycle</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-purple-400 mt-1">•</span>
-                <span>Refunds are processed to the original payment method</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-purple-400 mt-1">•</span>
-                <span>Access continues until the refund is processed</span>
-              </li>
-            </ul>
-
-            <h3 className="font-semibold text-[var(--text-primary)] mt-6 mb-3">Annual Subscriptions</h3>
-            <ul className="space-y-2 ml-4 mb-4">
-              <li className="flex items-start gap-2">
-                <span className="text-purple-400 mt-1">•</span>
-                <span>Full refund available within 14 days of purchase</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-purple-400 mt-1">•</span>
-                <span>After 14 days, no partial refunds are provided</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-purple-400 mt-1">•</span>
-                <span>You can cancel anytime to prevent future renewals</span>
-              </li>
-            </ul>
-
-            <h3 className="font-semibold text-[var(--text-primary)] mt-6 mb-3">Lifetime Deals</h3>
-            <ul className="space-y-2 ml-4">
-              <li className="flex items-start gap-2">
-                <span className="text-purple-400 mt-1">•</span>
-                <span>Full refund available within 14 days of purchase</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-purple-400 mt-1">•</span>
-                <span>After 14 days, lifetime purchases are non-refundable</span>
-              </li>
-            </ul>
           </section>
 
           {/* How to Request a Refund */}
           <section>
             <h2 className="text-lg sm:text-xl font-semibold text-[var(--text-primary)] mb-4">How to Request a Refund</h2>
-            <p className="mb-4">To request a refund, you have two options:</p>
+            <p className="mb-4">To request a refund, you can:</p>
             
             <div className="grid sm:grid-cols-2 gap-4 mb-6">
               <div className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl p-4 sm:p-6">
-                <h4 className="font-semibold text-[var(--text-primary)] mb-2">Option 1: Email Us</h4>
-                <p className="text-sm mb-3">Send a refund request to:</p>
+                <h4 className="font-semibold text-[var(--text-primary)] mb-2">Contact Paddle Directly</h4>
+                <p className="text-sm mb-3">
+                  As the Merchant of Record, Paddle can process your refund request directly.
+                </p>
+                <a 
+                  href="https://www.paddle.com/help/start/intro-to-paddle/what-is-paddle" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 text-sm"
+                >
+                  Paddle Support
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+              <div className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl p-4 sm:p-6">
+                <h4 className="font-semibold text-[var(--text-primary)] mb-2">Contact Us</h4>
+                <p className="text-sm mb-3">
+                  We're happy to help facilitate your refund request with Paddle.
+                </p>
                 <a href="mailto:support@stripeviz.com" className="text-purple-400 hover:text-purple-300 text-sm">
                   support@stripeviz.com
                 </a>
-                <p className="text-xs text-[var(--text-muted)] mt-2">Include your account email and reason for refund.</p>
               </div>
-              <div className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl p-4 sm:p-6">
+            </div>
+          </section>
+
+          {/* Cancellations */}
+          <section>
+            <h2 className="text-lg sm:text-xl font-semibold text-[var(--text-primary)] mb-4">Cancellations</h2>
+            <p className="mb-4">
+              You may cancel your subscription at any time through your account dashboard or by contacting us. 
+              Upon cancellation, you will retain access to the service until the end of your current billing period.
+            </p>
+            <p>
+              For any billing-related questions or to manage your subscription, you can also contact Paddle directly 
+              as they handle all payment processing for StripeViz.
+            </p>
+          </section>
+
+          {/* Contact */}
+          <section>
+            <h2 className="text-lg sm:text-xl font-semibold text-[var(--text-primary)] mb-4">Questions?</h2>
+            <p className="mb-4">
+              If you have any questions about this refund policy or need assistance, please don't hesitate to reach out.
+            </p>
+            <div className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl p-4 sm:p-6">
+              <p className="text-sm mb-2">
+                <strong className="text-[var(--text-primary)]">Email:</strong>{" "}
+                <a href="mailto:support@stripeviz.com" className="text-purple-400 hover:text-purple-300">
+                  support@stripeviz.com
+                </a>
+              </p>
+              <p className="text-sm">
+                <strong className="text-[var(--text-primary)]">Payment Processor:</strong>{" "}
+                <a 
+                  href="https://www.paddle.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-purple-400 hover:text-purple-300"
+                >
+                  Paddle.com Market Limited
+                </a>
+              </p>
+            </div>
+          </section>
+        </div>
+
+        {/* Footer Links */}
+        <div className="mt-12 pt-8 border-t border-[var(--border-subtle)]">
+          <div className="flex flex-wrap gap-4 text-sm text-[var(--text-muted)]">
+            <Link to="/terms" className="hover:text-[var(--text-primary)] transition-colors">Terms of Service</Link>
+            <Link to="/privacy" className="hover:text-[var(--text-primary)] transition-colors">Privacy Policy</Link>
+            <Link to="/security" className="hover:text-[var(--text-primary)] transition-colors">Security</Link>
+            <Link to="/billing" className="hover:text-[var(--text-primary)] transition-colors">Billing FAQ</Link>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
                 <h4 className="font-semibold text-[var(--text-primary)] mb-2">Option 2: Paddle Receipt</h4>
                 <p className="text-sm mb-3">Use the refund link in your Paddle receipt email.</p>
                 <p className="text-xs text-[var(--text-muted)]">Refunds via Paddle are typically processed within 5-10 business days.</p>
