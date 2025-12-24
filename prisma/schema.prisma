@@ -1,0 +1,137 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  passwordHash      String?   // Nullable for OAuth users
+  name              String?
+  avatar            String?   // Profile picture URL
+  
+  // OAuth fields
+  oauthProvider     String?   // "google" | "github" | null (for email/password)
+  oauthProviderId   String?   // Provider's user ID
+  emailVerified     Boolean   @default(false)
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  stripeConnection  StripeConnection?
+  subscription      Subscription?
+  metricSnapshots   MetricSnapshot[]
+
+  @@unique([oauthProvider, oauthProviderId])
+  @@index([email])
+  @@index([oauthProvider, oauthProviderId])
+}
+
+model StripeConnection {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  stripeAccountId   String    @unique
+  accessToken       String    // Encrypted in production
+  refreshToken      String?   // Encrypted in production
+  tokenExpiresAt    DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invoices          Invoice[]
+  
+  @@index([userId])
+  @@index([stripeAccountId])
+}
+
+model Subscription {
+  id                    String    @id @default(cuid())
+  userId                String    @unique
+  stripeCustomerId      String    @unique
+  stripeSubscriptionId  String?   @unique  // Null for free/lifetime users
+  
+  // Plan: "free" | "pro" | "business" | "lifetime"
+  plan                  String    @default("free")
+  
+  // Billing interval: "monthly" | "yearly" | "lifetime" | null (for free)
+  interval              String?
+  
+  // Status: "active" | "canceled" | "past_due" | "trialing" | "incomplete"
+  status                String    @default("active")
+  
+  // Stripe Price ID used (for tracking which price they're on)
+  stripePriceId         String?
+  
+  // Billing period dates (null for lifetime)
+  currentPeriodStart    DateTime?
+  currentPeriodEnd      DateTime?
+  
+  // Cancellation tracking
+  cancelAtPeriodEnd     Boolean   @default(false)
+  canceledAt            DateTime?
+  
+  // Lifetime specific
+  isLifetime            Boolean   @default(false)
+  lifetimePurchasedAt   DateTime?
+  
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  // Relations
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([stripeCustomerId])
+  @@index([stripeSubscriptionId])
+  @@index([plan, status])
+}
+
+model Invoice {
+  id                String    @id @default(cuid())
+  stripeConnectionId String
+  stripeInvoiceId   String    @unique
+  customerId        String
+  amount            Int       // Amount in cents
+  currency          String    @default("usd")
+  status            String    // "draft", "sent", "paid", "void", "uncollectible"
+  paidAt            DateTime?
+  dueDate           DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  stripeConnection  StripeConnection @relation(fields: [stripeConnectionId], references: [id], onDelete: Cascade)
+  
+  @@index([stripeConnectionId])
+  @@index([stripeInvoiceId])
+  @@index([customerId])
+}
+
+model MetricSnapshot {
+  id                String    @id @default(cuid())
+  userId            String
+  mrr               Int       @default(0) // In cents
+  arr               Int       @default(0) // In cents
+  activeSubscriptions Int     @default(0)
+  failedPayments    Int       @default(0)
+  totalRevenue      Int       @default(0) // In cents
+  date              DateTime  @default(now())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([date])
+  @@unique([userId, date])
+}
