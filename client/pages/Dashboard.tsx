@@ -17,6 +17,7 @@ import {
 } from 'recharts';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { getApiUrl } from '@/lib/api';
 import type { 
   Insight, WeeklySummary, HealthIndicator, DataFreshness, HealthStatus
 } from '@shared/api';
@@ -87,8 +88,9 @@ export default function Dashboard() {
   const fetchUser = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/auth/me', {
+      const response = await fetch(getApiUrl('/api/auth/me'), {
         headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -110,8 +112,9 @@ export default function Dashboard() {
     setIsFetchingMetrics(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/metrics', {
+      const response = await fetch(getApiUrl('/api/metrics'), {
         headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -136,12 +139,13 @@ export default function Dashboard() {
     setIsConnecting(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/stripe/connect', {
+      const response = await fetch(getApiUrl('/api/stripe/connect'), {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ apiKey: apiKey.trim() }),
       });
 
@@ -170,8 +174,9 @@ export default function Dashboard() {
     setIsExporting(type);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/export/${type}`, {
+      const response = await fetch(getApiUrl(`/api/export/${type}`), {
         headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
       });
 
       if (response.status === 403) {

@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Activity, Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { DarkLayout } from "@/components/DarkLayout";
 import { toast } from "sonner";
+import { getApiUrl } from "@/lib/api";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -39,11 +40,12 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch(getApiUrl("/api/auth/login"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
@@ -80,7 +82,7 @@ export default function Login() {
           <div className="flex flex-col sm:grid sm:grid-cols-2 gap-3 sm:gap-4 mb-6">
             <button
               type="button"
-              onClick={() => window.location.href = "/api/auth/google"}
+              onClick={() => window.location.href = getApiUrl("/api/auth/google")}
               className="btn-secondary flex items-center justify-center gap-2 py-3 touch-manipulation"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -93,7 +95,7 @@ export default function Login() {
             </button>
             <button
               type="button"
-              onClick={() => window.location.href = "/api/auth/github"}
+              onClick={() => window.location.href = getApiUrl("/api/auth/github")}
               className="btn-secondary flex items-center justify-center gap-2 py-3 touch-manipulation"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">

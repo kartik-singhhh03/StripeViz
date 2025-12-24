@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Loader2, Mail, Lock, Eye, EyeOff, User, Check } from "lucide-react";
 import { DarkLayout } from "@/components/DarkLayout";
 import { toast } from "sonner";
+import { getApiUrl } from "@/lib/api";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -50,11 +51,12 @@ export default function Signup() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/auth/signup", {
+      const response = await fetch(getApiUrl("/api/auth/signup"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,

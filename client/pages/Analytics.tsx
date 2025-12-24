@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Sidebar } from "@/components/Sidebar";
 import { AnalyticsSkeleton } from "@/components/skeletons";
+import { getApiUrl } from "@/lib/api";
 import {
   LineChart,
   Line,
@@ -73,10 +74,11 @@ export default function Analytics() {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      const response = await fetch("/api/analytics", {
+      const response = await fetch(getApiUrl("/api/analytics"), {
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        credentials: "include",
       });
 
       if (!response.ok) {

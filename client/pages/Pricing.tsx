@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { getApiUrl } from "@/lib/api";
 
 interface PlanFeature {
   name: string;
@@ -128,11 +129,11 @@ export default function Pricing() {
   useEffect(() => {
     async function checkAuth() {
       try {
-        const res = await fetch("/api/auth/me", { credentials: "include" });
+        const res = await fetch(getApiUrl("/api/auth/me"), { credentials: "include" });
         if (res.ok) {
           setIsAuthenticated(true);
           // Get subscription status
-          const subRes = await fetch("/api/stripe/subscription", { credentials: "include" });
+          const subRes = await fetch(getApiUrl("/api/stripe/subscription"), { credentials: "include" });
           if (subRes.ok) {
             const data = await subRes.json();
             setCurrentPlan(data.plan);
@@ -160,7 +161,7 @@ export default function Pricing() {
     setError(null);
 
     try {
-      const res = await fetch("/api/stripe/checkout", {
+      const res = await fetch(getApiUrl("/api/stripe/checkout"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

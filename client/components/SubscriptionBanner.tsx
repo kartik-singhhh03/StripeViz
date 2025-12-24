@@ -29,6 +29,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { getApiUrl } from "@/lib/api";
 
 interface SubscriptionInfo {
   plan: string;
@@ -66,7 +67,7 @@ export function SubscriptionBanner() {
 
   async function fetchSubscription() {
     try {
-      const res = await fetch("/api/stripe/subscription", { credentials: "include" });
+      const res = await fetch(getApiUrl("/api/stripe/subscription"), { credentials: "include" });
       if (res.ok) {
         const data = await res.json();
         setSubscription(data);
@@ -82,7 +83,7 @@ export function SubscriptionBanner() {
     setPortalLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/stripe/portal", {
+      const res = await fetch(getApiUrl("/api/stripe/portal"), {
         method: "POST",
         credentials: "include",
       });
@@ -99,7 +100,7 @@ export function SubscriptionBanner() {
     setCancelLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/stripe/cancel", {
+      const res = await fetch(getApiUrl("/api/stripe/cancel"), {
         method: "POST",
         credentials: "include",
       });
@@ -118,7 +119,7 @@ export function SubscriptionBanner() {
     setReactivateLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/stripe/reactivate", {
+      const res = await fetch(getApiUrl("/api/stripe/reactivate"), {
         method: "POST",
         credentials: "include",
       });
@@ -351,7 +352,7 @@ export function FeatureGate({ feature, requiredPlan = "pro", children }: Feature
   useEffect(() => {
     async function fetchSubscription() {
       try {
-        const res = await fetch("/api/stripe/subscription", { credentials: "include" });
+        const res = await fetch(getApiUrl("/api/stripe/subscription"), { credentials: "include" });
         if (res.ok) {
           setSubscription(await res.json());
         }

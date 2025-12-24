@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sidebar } from "@/components/Sidebar";
 import { InvoicesSkeleton } from "@/components/skeletons";
+import { getApiUrl } from "@/lib/api";
 import {
   Select,
   SelectContent,
@@ -57,7 +58,8 @@ export default function Invoices() {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      const url = new URL("/api/invoices", window.location.origin);
+      const baseUrl = getApiUrl("/api/invoices");
+      const url = new URL(baseUrl, window.location.origin);
       if (statusFilter !== "all") {
         url.searchParams.set("status", statusFilter);
       }
@@ -66,6 +68,7 @@ export default function Invoices() {
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        credentials: "include",
       });
 
       if (!response.ok) {

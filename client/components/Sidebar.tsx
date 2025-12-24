@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState, createContext, useContext } from "react";
 import { cn } from "@/lib/utils";
+import { getApiUrl } from "@/lib/api";
 
 interface User {
   id: string;
@@ -48,8 +49,9 @@ export function Sidebar({ className }: SidebarProps) {
           return;
         }
 
-        const response = await fetch("/api/auth/me", {
+        const response = await fetch(getApiUrl("/api/auth/me"), {
           headers: { Authorization: `Bearer ${token}` },
+          credentials: "include",
         });
 
         if (!response.ok) throw new Error("Failed to fetch user");

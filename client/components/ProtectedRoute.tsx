@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+import { getApiUrl } from "@/lib/api";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -26,10 +27,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
       try {
         // Verify token with backend
-        const response = await fetch("/api/auth/me", {
+        const response = await fetch(getApiUrl("/api/auth/me"), {
           headers: {
             Authorization: `Bearer ${token}`,
           },
+          credentials: "include",
         });
 
         if (response.ok) {

@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Sidebar } from "@/components/Sidebar";
 import { CustomersSkeleton } from "@/components/skeletons";
+import { getApiUrl } from "@/lib/api";
 import {
   Search,
   Users,
@@ -40,10 +41,11 @@ export default function Customers() {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      const response = await fetch("/api/customers", {
+      const response = await fetch(getApiUrl("/api/customers"), {
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        credentials: "include",
       });
 
       if (!response.ok) {
