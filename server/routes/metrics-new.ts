@@ -8,7 +8,16 @@ import {
   generateWeeklySummary,
   generateHealthIndicator,
   calculateDataFreshness,
+  detectAnomalies,
+  generateBusinessTimeline,
+  generateCohortRetention,
+  generateParetoAnalysis,
+  generateRevenueForecast,
+  generatePaymentFunnel,
+  generateRecoverableRevenue,
 } from "../lib/insights-engine";
+import { generateBenchmarkingData } from "./benchmarking";
+import { generateSmartAlerts } from "./smart-alerts";
 
 const prisma = new PrismaClient();
 
@@ -272,6 +281,152 @@ async function fetchMetricsFromStripe(userId: string): Promise<{ data?: any; err
         }),
         dataFreshness: calculateDataFreshness(new Date()),
         previousPeriod: previousPeriodMetrics,
+        
+        // ========================
+        // NEW ADVANCED ANALYTICS
+        // ========================
+        
+        // Z-Score Anomaly Detection
+        anomalies: detectAnomalies(
+          revenueData.map(r => ({ date: r.date, value: r.net })),
+          'Daily Revenue'
+        ),
+        
+        // Business Timeline
+        businessTimeline: generateBusinessTimeline({
+          charges: chargesLast30Days.data
+            .filter(c => c.status === 'succeeded')
+            .map(c => ({
+              id: c.id,
+              amount: c.amount,
+              created: c.created,
+              customerId: typeof c.customer === 'string' ? c.customer : c.customer?.id || '',
+              customerName: customerMap.get(typeof c.customer === 'string' ? c.customer : c.customer?.id || '')?.name || 'Customer',
+            })),
+          subscriptions: allSubscriptions.map(s => ({
+            id: s.id,
+            created: s.created,
+            canceledAt: s.canceled_at || undefined,
+            customerId: typeof s.customer === 'string' ? s.customer : s.customer?.id || '',
+            customerName: customerMap.get(typeof s.customer === 'string' ? s.customer : s.customer?.id || '')?.name || 'Customer',
+            amount: s.items.data.reduce((sum, item) => sum + (item.price.unit_amount || 0), 0),
+          })),
+          refunds: chargesLast30Days.data
+            .filter(c => c.amount_refunded > 0)
+            .map(c => ({
+              id: c.id,
+              amount: c.amount_refunded,
+              created: c.created,
+            })),
+        }),
+        
+        // Cohort Retention Matrix
+        cohortRetention: generateCohortRetention({
+          subscriptions: allSubscriptions.map(s => ({
+            id: s.id,
+            customerId: typeof s.customer === 'string' ? s.customer : s.customer?.id || '',
+            created: s.created,
+            canceledAt: s.canceled_at || undefined,
+            status: s.status,
+          })),
+        }),
+        
+        // Pareto (80/20) Analysis
+        paretoAnalysis: generateParetoAnalysis({
+          customers: customersResponse.data.map(c => {
+            const customerCharges = chargesLast30Days.data.filter(
+              charge => (typeof charge.customer === 'string' ? charge.customer : charge.customer?.id) === c.id
+            );
+            return {
+              id: c.id,
+              name: c.name || c.email || 'Unknown',
+              email: c.email || '',
+              totalRevenue: customerCharges.reduce((sum, charge) => 
+                sum + (charge.status === 'succeeded' ? charge.amount / 100 : 0), 0
+              ),
+              subscriptionCount: allSubscriptions.filter(
+                s => (typeof s.customer === 'string' ? s.customer : s.customer?.id) === c.id
+              ).length,
+            };
+          }),
+        }),
+        
+        // Revenue Forecasting
+        revenueForecasting: generateRevenueForecast({
+          revenueHistory: revenueData.map(r => ({ date: r.date, revenue: r.net })),
+          currentMRR: mrr,
+        }),
+        
+        // Payment Funnel
+        paymentFunnel: generatePaymentFunnel({
+          invoices: invoicesResponse.data.map(inv => ({
+            id: inv.id,
+            status: inv.status || 'unknown',
+            amount: inv.amount_due,
+            created: inv.created,
+            attemptCount: inv.attempt_count || 0,
+            paidAt: inv.status_transitions?.paid_at || undefined,
+          })),
+          paymentIntents: failedPaymentsResponse.data.map(pi => ({
+            id: pi.id,
+            status: pi.status,
+            amount: pi.amount,
+            created: pi.created,
+          })),
+        }),
+        
+        // Recoverable Revenue
+        recoverableRevenue: generateRecoverableRevenue({
+          failedPayments: formattedFailedPayments.map(fp => ({
+            id: fp.id,
+            customerId: '',
+            customerName: fp.customer,
+            amount: fp.amount,
+            reason: fp.reason,
+            date: fp.date,
+            retryCount: fp.retries,
+          })),
+          expiredCards: [], // Would need card data from Stripe
+          incompleteInvoices: invoicesResponse.data
+            .filter(inv => inv.status === 'open' || inv.status === 'draft')
+            .map(inv => ({
+              id: inv.id,
+              customerId: typeof inv.customer === 'string' ? inv.customer : inv.customer?.id || '',
+              customerName: typeof inv.customer === 'object' 
+                ? (inv.customer as Stripe.Customer).name || (inv.customer as Stripe.Customer).email || 'Unknown'
+                : customerMap.get(inv.customer)?.name || 'Unknown',
+              amount: inv.amount_due / 100,
+              status: inv.status || 'unknown',
+              daysPending: Math.floor((Date.now() / 1000 - inv.created) / (24 * 60 * 60)),
+            })),
+        }),
+        
+        // What-If Simulator Base Data
+        whatIfBaseData: {
+          currentMRR: mrr,
+          currentARR: mrr * 12,
+          currentChurnRate: churnRate,
+          currentARPU: totalCustomers > 0 ? mrr / activeSubscriptions.length : 0,
+          currentCustomers: totalCustomers,
+          monthlyPlanPercentage: 70, // Default assumption - would need actual data
+        },
+        
+        // Smart Alerts (generated based on period comparison)
+        smartAlerts: generateSmartAlerts(
+          userId,
+          { mrr, churnRate, failedPayments: failedCount, activeSubscriptions: activeSubscriptions.length },
+          { mrr: previousPeriodMetrics.mrr, churnRate: churnRate * 0.9, failedPayments: previousFailedCount, activeSubscriptions: previousPeriodMetrics.activeSubscriptions }
+        ),
+        
+        // Anonymous Benchmarking
+        benchmarking: generateBenchmarkingData({
+          mrr,
+          arr: mrr * 12,
+          churnRate,
+          arpu: activeSubscriptions.length > 0 ? mrr / activeSubscriptions.length : 0,
+          customerCount: totalCustomers,
+          revenueData,
+        }),
       },
     };
   } catch (error: any) {

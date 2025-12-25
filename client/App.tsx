@@ -24,6 +24,7 @@ import Refund from "./pages/Refund";
 import Security from "./pages/Security";
 import Billing from "./pages/Billing";
 import NotFound from "./pages/NotFound";
+import PublicSnapshot from "./pages/PublicSnapshot";
 
 const queryClient = new QueryClient();
 
@@ -78,6 +79,8 @@ const App = () => (
             <Route path="/refund" element={<Refund />} />
             <Route path="/security" element={<Security />} />
             <Route path="/billing" element={<Billing />} />
+            {/* Public snapshot route (no auth required) */}
+            <Route path="/s/:token" element={<PublicSnapshot />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

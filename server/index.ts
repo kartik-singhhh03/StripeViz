@@ -36,6 +36,24 @@ import {
 } from "./routes/export";
 import { requireProPlan } from "./lib/subscription";
 
+// NEW: Advanced features
+import { handleWhatIfSimulation, handleBatchWhatIfSimulation } from "./routes/whatif";
+import { 
+  handleGetAlerts, 
+  handleMarkAlertRead, 
+  handleMarkAllAlertsRead,
+  handleGetAlertPreferences,
+  handleUpdateAlertPreferences 
+} from "./routes/smart-alerts";
+import {
+  handleCreateSnapshot,
+  handleGetPublicSnapshot,
+  handleGetMySnapshot,
+  handleDeleteSnapshot,
+  handleUpdateSnapshotSettings
+} from "./routes/public-snapshot";
+import { handleGetBenchmarking, handleGetIndustryBenchmarks } from "./routes/benchmarking";
+
 // Security imports
 import {
   securityHeaders,
@@ -218,6 +236,37 @@ export function createServer() {
   });
 
   app.get("/api/demo", handleDemo);
+
+  // ========================
+  // What-If Simulator routes
+  // ========================
+  app.post("/api/whatif/simulate", authMiddleware, handleWhatIfSimulation);
+  app.post("/api/whatif/batch", authMiddleware, handleBatchWhatIfSimulation);
+
+  // ========================
+  // Smart Alerts routes
+  // ========================
+  app.get("/api/alerts", authMiddleware, handleGetAlerts);
+  app.post("/api/alerts/:id/read", authMiddleware, handleMarkAlertRead);
+  app.post("/api/alerts/read-all", authMiddleware, handleMarkAllAlertsRead);
+  app.get("/api/alerts/preferences", authMiddleware, handleGetAlertPreferences);
+  app.put("/api/alerts/preferences", authMiddleware, handleUpdateAlertPreferences);
+
+  // ========================
+  // Public Snapshot routes
+  // ========================
+  app.post("/api/snapshot/create", authMiddleware, handleCreateSnapshot);
+  app.get("/api/snapshot/mine", authMiddleware, handleGetMySnapshot);
+  app.delete("/api/snapshot/:token", authMiddleware, handleDeleteSnapshot);
+  app.put("/api/snapshot/:token/settings", authMiddleware, handleUpdateSnapshotSettings);
+  // Public endpoint (no auth)
+  app.get("/api/snapshot/:token", handleGetPublicSnapshot);
+
+  // ========================
+  // Benchmarking routes
+  // ========================
+  app.get("/api/benchmarking", authMiddleware, handleGetBenchmarking);
+  app.get("/api/benchmarking/industry", handleGetIndustryBenchmarks);
 
   // ========================
   // Error handler - must be last

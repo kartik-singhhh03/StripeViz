@@ -1,10 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { 
   TrendingUp, TrendingDown, DollarSign, Users, CreditCard, AlertCircle, 
   Calendar, Download, Filter, Search, ChevronRight, Activity,
   ArrowUpRight, ArrowDownRight, Info, CheckCircle, XCircle, Clock, Key, Loader2, LogOut,
-  RefreshCw, AlertTriangle, Shield, FileText, Zap, Heart, Eye, Menu
+  RefreshCw, AlertTriangle, Shield, FileText, Zap, Heart, Eye, Menu,
+  Target, Flame, Award, TrendingUp as TrendUp, BarChart3, PieChart as PieChartIcon,
+  Sparkles, DollarSign as Dollar, CircleDollarSign, Wallet, Calculator, ChevronDown,
+  Play, Pause, Milestone, PartyPopper, Share2, Bell, Globe, Trophy, Sliders,
+  Copy, ExternalLink, Settings, ToggleLeft, ToggleRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -12,14 +16,18 @@ import { Input } from '@/components/ui/input';
 import { Sidebar, useSidebarOffset } from '@/components/Sidebar';
 import { DashboardSkeleton, KpiGridSkeleton, AreaChartSkeleton, InsightCardSkeleton, WeeklySummarySkeleton } from '@/components/skeletons';
 import {
-  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, FunnelChart, Funnel, LabelList,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis
 } from 'recharts';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { getApiUrl } from '@/lib/api';
 import type { 
-  Insight, WeeklySummary, HealthIndicator, DataFreshness, HealthStatus
+  Insight, WeeklySummary, HealthIndicator, DataFreshness, HealthStatus,
+  ZScoreAnomaly, TimelineEvent, CohortRetentionMatrix, CohortData,
+  ParetoAnalysis, ParetoSegment, RevenueForecasting, ForecastDataPoint,
+  PaymentFunnel, FunnelStep, RecoverableRevenue, RecoverableItem,
+  WhatIfScenario, WhatIfResult, WhatIfBaseData, SmartAlert, BenchmarkingData, BenchmarkPercentile
 } from '@shared/api';
 
 interface User {
@@ -55,6 +63,18 @@ interface Metrics {
   weeklySummary: WeeklySummary;
   healthIndicator: HealthIndicator;
   dataFreshness: DataFreshness;
+  // NEW: Advanced Analytics
+  anomalies?: ZScoreAnomaly[];
+  businessTimeline?: TimelineEvent[];
+  cohortRetention?: CohortRetentionMatrix;
+  paretoAnalysis?: ParetoAnalysis;
+  revenueForecasting?: RevenueForecasting;
+  paymentFunnel?: PaymentFunnel;
+  recoverableRevenue?: RecoverableRevenue;
+  // NEW: What-If, Alerts, Benchmarking
+  whatIfBaseData?: WhatIfBaseData;
+  smartAlerts?: SmartAlert[];
+  benchmarking?: BenchmarkingData;
 }
 
 export default function Dashboard() {
@@ -365,6 +385,10 @@ export default function Dashboard() {
         case 'warning': return AlertTriangle;
         case 'check': return CheckCircle;
         case 'alert': return AlertCircle;
+        case 'fire': return Flame;
+        case 'celebration': return PartyPopper;
+        case 'milestone': return Award;
+        case 'user': return Users;
         default: return Info;
       }
     };
@@ -493,6 +517,1281 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+      </Card>
+    );
+  };
+
+  // ========================
+  // COMPONENT: Business Timeline
+  // ========================
+  const BusinessTimelineCard = ({ events }: { events: TimelineEvent[] }) => {
+    if (!events || events.length === 0) return null;
+
+    const getEventIcon = (type: string) => {
+      switch (type) {
+        case 'first_payment': return PartyPopper;
+        case 'first_customer': return Users;
+        case 'best_revenue_day': return Flame;
+        case 'refund_spike': return AlertTriangle;
+        case 'worst_churn_day': return TrendingDown;
+        case 'revenue_milestone': return Award;
+        default: return Milestone;
+      }
+    };
+
+    const severityColors = {
+      positive: 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400',
+      warning: 'bg-amber-500/20 border-amber-500/30 text-amber-400',
+      critical: 'bg-red-500/20 border-red-500/30 text-red-400',
+      neutral: 'bg-purple-500/20 border-purple-500/30 text-purple-400',
+    };
+
+    return (
+      <Card className="p-4 sm:p-6 glass-card">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+            <Milestone className="w-5 h-5 text-purple-400" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-[var(--text-primary)]">Business Timeline</h3>
+            <p className="text-sm text-[var(--text-muted)]">Key milestones in your journey</p>
+          </div>
+        </div>
+
+        <div className="relative">
+          {/* Timeline line */}
+          <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gradient-to-b from-purple-500/50 via-purple-500/20 to-transparent" />
+          
+          <div className="space-y-4">
+            {events.slice(0, 6).map((event, index) => {
+              const IconComponent = getEventIcon(event.type);
+              return (
+                <div key={event.id} className="relative flex gap-4 items-start pl-2">
+                  <div className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center border ${severityColors[event.severity]}`}>
+                    <IconComponent className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 pb-4">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <h4 className="font-semibold text-[var(--text-primary)] text-sm">{event.title}</h4>
+                      <span className="text-xs text-[var(--text-muted)] whitespace-nowrap">
+                        {format(new Date(event.date), 'MMM dd, yyyy')}
+                      </span>
+                    </div>
+                    <p className="text-sm text-[var(--text-secondary)]">{event.description}</p>
+                    {event.value > 0 && (
+                      <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/5 text-xs font-semibold text-[var(--text-primary)]">
+                        {event.type.includes('revenue') || event.type.includes('payment') 
+                          ? `$${event.value.toLocaleString()}` 
+                          : event.value}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </Card>
+    );
+  };
+
+  // ========================
+  // COMPONENT: Cohort Retention Heatmap
+  // ========================
+  const CohortRetentionCard = ({ data }: { data: CohortRetentionMatrix }) => {
+    if (!data || !data.cohorts || data.cohorts.length === 0) return null;
+
+    const getRetentionColor = (percentage: number) => {
+      if (percentage >= 80) return 'bg-emerald-500/80';
+      if (percentage >= 60) return 'bg-emerald-500/50';
+      if (percentage >= 40) return 'bg-amber-500/50';
+      if (percentage >= 20) return 'bg-amber-500/30';
+      return 'bg-red-500/30';
+    };
+
+    const trendColors = {
+      improving: 'text-emerald-400',
+      stable: 'text-amber-400',
+      declining: 'text-red-400',
+    };
+
+    return (
+      <Card className="p-4 sm:p-6 glass-card">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center">
+              <BarChart3 className="w-5 h-5 text-blue-400" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-[var(--text-primary)]">Cohort Retention</h3>
+              <p className="text-sm text-[var(--text-muted)]">Customer retention by signup month</p>
+            </div>
+          </div>
+          <div className={`px-3 py-1.5 rounded-lg bg-white/5 border border-[var(--border-subtle)] text-sm font-medium ${trendColors[data.summary.trend]}`}>
+            {data.summary.trend === 'improving' ? '📈 Improving' : data.summary.trend === 'stable' ? '➡️ Stable' : '📉 Declining'}
+          </div>
+        </div>
+
+        {/* Summary stats */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="p-3 bg-white/5 rounded-xl text-center">
+            <div className="text-2xl font-bold text-[var(--text-primary)]">{data.summary.avgMonth1Retention.toFixed(0)}%</div>
+            <div className="text-xs text-[var(--text-muted)]">Avg Month 1</div>
+          </div>
+          <div className="p-3 bg-emerald-500/10 rounded-xl text-center border border-emerald-500/20">
+            <div className="text-lg font-bold text-emerald-400">{data.summary.bestCohort}</div>
+            <div className="text-xs text-[var(--text-muted)]">Best Cohort</div>
+          </div>
+          <div className="p-3 bg-red-500/10 rounded-xl text-center border border-red-500/20">
+            <div className="text-lg font-bold text-red-400">{data.summary.worstCohort}</div>
+            <div className="text-xs text-[var(--text-muted)]">Needs Work</div>
+          </div>
+        </div>
+
+        {/* Heatmap */}
+        <div className="overflow-x-auto -mx-4 sm:mx-0">
+          <table className="w-full min-w-[400px] text-sm">
+            <thead>
+              <tr>
+                <th className="text-left py-2 px-2 text-xs font-semibold text-[var(--text-muted)]">Cohort</th>
+                {[0, 1, 2, 3, 4, 5].map(month => (
+                  <th key={month} className="text-center py-2 px-2 text-xs font-semibold text-[var(--text-muted)]">
+                    M{month}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {data.cohorts.slice(0, 6).map(cohort => (
+                <tr key={cohort.cohortMonth} className="border-t border-white/5">
+                  <td className="py-2 px-2 text-[var(--text-primary)] font-medium">{cohort.label}</td>
+                  {[0, 1, 2, 3, 4, 5].map(month => {
+                    const retention = cohort.retentionByMonth[month];
+                    if (!retention) return <td key={month} className="py-2 px-2 text-center">-</td>;
+                    return (
+                      <td key={month} className="py-2 px-2">
+                        <div className={`w-full h-8 rounded-md flex items-center justify-center text-xs font-bold text-white ${getRetentionColor(retention.percentage)}`}>
+                          {retention.percentage.toFixed(0)}%
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    );
+  };
+
+  // ========================
+  // COMPONENT: Pareto Analysis (80/20)
+  // ========================
+  const ParetoAnalysisCard = ({ data }: { data: ParetoAnalysis }) => {
+    if (!data || !data.segments || data.segments.length === 0) return null;
+
+    const concentrationColors = {
+      low: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+      moderate: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
+      high: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+      extreme: 'text-red-400 bg-red-500/10 border-red-500/20',
+    };
+
+    const COLORS = ['#8b5cf6', '#6366f1', '#3b82f6'];
+
+    return (
+      <Card className="p-4 sm:p-6 glass-card">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center">
+              <PieChartIcon className="w-5 h-5 text-violet-400" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-[var(--text-primary)]">Revenue Distribution</h3>
+              <p className="text-sm text-[var(--text-muted)]">Pareto (80/20) Analysis</p>
+            </div>
+          </div>
+          <div className={`px-3 py-1.5 rounded-lg border text-sm font-medium ${concentrationColors[data.concentration]}`}>
+            {data.concentration.charAt(0).toUpperCase() + data.concentration.slice(1)} Concentration
+          </div>
+        </div>
+
+        {/* Main stat */}
+        <div className="text-center p-6 bg-gradient-to-br from-purple-500/10 to-violet-500/10 rounded-2xl border border-purple-500/20 mb-6">
+          <div className="text-5xl font-black text-[var(--text-primary)] mb-2">
+            {data.topCustomersShare.revenueShare.toFixed(0)}%
+          </div>
+          <div className="text-[var(--text-secondary)]">
+            of revenue from <span className="text-purple-400 font-bold">Top {data.topCustomersShare.percentage}%</span> customers
+          </div>
+          <div className="text-sm text-[var(--text-muted)] mt-1">
+            ({data.topCustomersShare.count} customer{data.topCustomersShare.count !== 1 ? 's' : ''})
+          </div>
+        </div>
+
+        {/* Segments breakdown */}
+        <div className="space-y-3 mb-6">
+          {data.segments.map((segment, index) => (
+            <div key={segment.name} className="p-3 bg-white/5 rounded-xl">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="w-3 h-3 rounded-full" 
+                    style={{ backgroundColor: COLORS[index] }} 
+                  />
+                  <span className="font-semibold text-[var(--text-primary)]">{segment.name}</span>
+                </div>
+                <span className="text-lg font-bold text-[var(--text-primary)]">
+                  {segment.revenuePercentage.toFixed(1)}%
+                </span>
+              </div>
+              <div className="flex justify-between text-sm text-[var(--text-muted)]">
+                <span>{segment.customerCount} customers</span>
+                <span>${segment.revenue.toLocaleString()} revenue</span>
+              </div>
+              {/* Progress bar */}
+              <div className="mt-2 h-2 bg-white/10 rounded-full overflow-hidden">
+                <div 
+                  className="h-full rounded-full" 
+                  style={{ 
+                    width: `${segment.revenuePercentage}%`, 
+                    backgroundColor: COLORS[index] 
+                  }} 
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Insights */}
+        <div className="space-y-2">
+          {data.insights.map((insight, i) => (
+            <div key={i} className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
+              <span>{insight}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+    );
+  };
+
+  // ========================
+  // COMPONENT: Revenue Forecasting
+  // ========================
+  const RevenueForecastingCard = ({ data }: { data: RevenueForecasting }) => {
+    if (!data) return null;
+
+    const confidenceColors = {
+      high: 'text-emerald-400 bg-emerald-500/10',
+      medium: 'text-amber-400 bg-amber-500/10',
+      low: 'text-red-400 bg-red-500/10',
+    };
+
+    const chartData = data.forecastData.map(d => ({
+      month: d.month,
+      projected: d.projected,
+      upper: d.upperBound,
+      lower: d.lowerBound,
+    }));
+
+    return (
+      <Card className="p-4 sm:p-6 glass-card">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center">
+              <TrendUp className="w-5 h-5 text-cyan-400" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-[var(--text-primary)]">Revenue Forecast</h3>
+              <p className="text-sm text-[var(--text-muted)]">6-month projection</p>
+            </div>
+          </div>
+          <div className={`px-3 py-1.5 rounded-lg ${confidenceColors[data.confidence]} text-sm font-medium`}>
+            {data.confidence.charAt(0).toUpperCase() + data.confidence.slice(1)} Confidence
+          </div>
+        </div>
+
+        {/* Key metrics */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="p-3 bg-white/5 rounded-xl text-center">
+            <div className="text-xl font-bold text-[var(--text-primary)]">${data.currentMRR.toLocaleString()}</div>
+            <div className="text-xs text-[var(--text-muted)]">Current MRR</div>
+          </div>
+          <div className="p-3 bg-purple-500/10 rounded-xl text-center border border-purple-500/20">
+            <div className="text-xl font-bold text-purple-400">${data.projectedMRR.toLocaleString()}</div>
+            <div className="text-xs text-[var(--text-muted)]">Projected MRR</div>
+          </div>
+          <div className="p-3 bg-white/5 rounded-xl text-center">
+            <div className="text-xl font-bold text-[var(--text-primary)]">{data.growthRate > 0 ? '+' : ''}{data.growthRate}%</div>
+            <div className="text-xs text-[var(--text-muted)]">Monthly Growth</div>
+          </div>
+        </div>
+
+        {/* Chart */}
+        <div className="h-48 sm:h-56">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData}>
+              <defs>
+                <linearGradient id="forecastGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="confidenceGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+              <XAxis 
+                dataKey="month" 
+                tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
+                axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+              />
+              <YAxis 
+                tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
+                axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+                tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'var(--bg-panel)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '12px',
+                }}
+                formatter={(value: number) => [`$${value.toLocaleString()}`, 'Projected']}
+              />
+              <Area 
+                type="monotone" 
+                dataKey="upper" 
+                stroke="transparent"
+                fill="url(#confidenceGradient)"
+                fillOpacity={1}
+              />
+              <Area 
+                type="monotone" 
+                dataKey="projected" 
+                stroke="#8b5cf6" 
+                strokeWidth={2}
+                fill="url(#forecastGradient)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Assumptions */}
+        <div className="mt-4 p-3 bg-white/5 rounded-xl">
+          <div className="text-xs font-semibold text-[var(--text-muted)] mb-2">Forecast Assumptions</div>
+          <ul className="text-xs text-[var(--text-secondary)] space-y-1">
+            {data.assumptions.slice(0, 3).map((assumption, i) => (
+              <li key={i} className="flex items-center gap-2">
+                <div className="w-1 h-1 rounded-full bg-purple-400" />
+                {assumption}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </Card>
+    );
+  };
+
+  // ========================
+  // COMPONENT: Payment Funnel
+  // ========================
+  const PaymentFunnelCard = ({ data }: { data: PaymentFunnel }) => {
+    if (!data || !data.steps || data.steps.length === 0) return null;
+
+    return (
+      <Card className="p-4 sm:p-6 glass-card">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500/20 to-amber-500/20 flex items-center justify-center">
+            <Filter className="w-5 h-5 text-orange-400" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-[var(--text-primary)]">Payment Funnel</h3>
+            <p className="text-sm text-[var(--text-muted)]">Invoice to payment conversion</p>
+          </div>
+        </div>
+
+        {/* Key metrics */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="p-3 bg-white/5 rounded-xl text-center">
+            <div className="text-2xl font-bold text-[var(--text-primary)]">{data.conversionRate.toFixed(0)}%</div>
+            <div className="text-xs text-[var(--text-muted)]">Conversion</div>
+          </div>
+          <div className="p-3 bg-white/5 rounded-xl text-center">
+            <div className="text-2xl font-bold text-[var(--text-primary)]">{data.avgPaymentTimeHours.toFixed(0)}h</div>
+            <div className="text-xs text-[var(--text-muted)]">Avg Time</div>
+          </div>
+          <div className="p-3 bg-white/5 rounded-xl text-center">
+            <div className="text-2xl font-bold text-emerald-400">{data.retrySuccessRate.toFixed(0)}%</div>
+            <div className="text-xs text-[var(--text-muted)]">Retry Success</div>
+          </div>
+        </div>
+
+        {/* Funnel visualization */}
+        <div className="space-y-2 mb-6">
+          {data.steps.map((step, index) => {
+            const width = step.percentage;
+            const isLast = index === data.steps.length - 1;
+            const bgColor = index === 0 ? 'bg-purple-500' : index === 1 ? 'bg-violet-500' : 'bg-emerald-500';
+            
+            return (
+              <div key={step.name}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium text-[var(--text-primary)]">{step.name}</span>
+                  <span className="text-sm text-[var(--text-muted)]">
+                    {step.count} (${step.value.toLocaleString()})
+                  </span>
+                </div>
+                <div className="relative">
+                  <div className="h-10 bg-white/5 rounded-lg overflow-hidden">
+                    <div 
+                      className={`h-full ${bgColor} rounded-lg flex items-center justify-center transition-all duration-500`}
+                      style={{ width: `${width}%` }}
+                    >
+                      <span className="text-white text-sm font-bold">{step.percentage.toFixed(0)}%</span>
+                    </div>
+                  </div>
+                  {step.dropOff !== undefined && step.dropOff > 0 && (
+                    <div className="absolute -right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                      <ArrowDownRight className="w-4 h-4 text-red-400" />
+                      <span className="text-xs text-red-400 font-medium">-{step.dropOff}</span>
+                    </div>
+                  )}
+                </div>
+                {step.dropOffReason && (
+                  <div className="text-xs text-[var(--text-muted)] mt-1">{step.dropOffReason}</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Revenue lost */}
+        {data.totalRevenueLost > 0 && (
+          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-4">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-400" />
+              <span className="text-sm text-red-400 font-semibold">
+                ${data.totalRevenueLost.toLocaleString()} revenue at risk from failed invoices
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Insights */}
+        <div className="space-y-2">
+          {data.insights.map((insight, i) => (
+            <div key={i} className="text-sm text-[var(--text-secondary)]">{insight}</div>
+          ))}
+        </div>
+      </Card>
+    );
+  };
+
+  // ========================
+  // COMPONENT: Recoverable Revenue
+  // ========================
+  const RecoverableRevenueCard = ({ data }: { data: RecoverableRevenue }) => {
+    if (!data || data.totalRecoverable === 0) return null;
+
+    const priorityColors = {
+      high: 'bg-red-500/20 text-red-400 border-red-500/30',
+      medium: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+      low: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    };
+
+    const typeIcons = {
+      failed_payment: CreditCard,
+      expired_card: AlertTriangle,
+      incomplete_invoice: FileText,
+    };
+
+    return (
+      <Card className="p-4 sm:p-6 glass-card border-emerald-500/20">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-500/20 flex items-center justify-center">
+              <CircleDollarSign className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-[var(--text-primary)]">Recoverable Revenue</h3>
+              <p className="text-sm text-[var(--text-muted)]">Money you could recover</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Big number */}
+        <div className="text-center p-6 bg-gradient-to-br from-emerald-500/10 to-green-500/10 rounded-2xl border border-emerald-500/20 mb-6">
+          <div className="text-4xl sm:text-5xl font-black text-emerald-400 mb-2">
+            ${data.totalRecoverable.toLocaleString()}
+          </div>
+          <div className="text-[var(--text-secondary)]">could be recovered</div>
+        </div>
+
+        {/* Breakdown */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="p-3 bg-white/5 rounded-xl text-center">
+            <CreditCard className="w-5 h-5 text-purple-400 mx-auto mb-2" />
+            <div className="text-lg font-bold text-[var(--text-primary)]">${data.breakdown.failedPayments.recoverable}</div>
+            <div className="text-xs text-[var(--text-muted)]">Failed ({data.breakdown.failedPayments.count})</div>
+          </div>
+          <div className="p-3 bg-white/5 rounded-xl text-center">
+            <AlertTriangle className="w-5 h-5 text-amber-400 mx-auto mb-2" />
+            <div className="text-lg font-bold text-[var(--text-primary)]">${data.breakdown.expiredCards.recoverable}</div>
+            <div className="text-xs text-[var(--text-muted)]">Expired ({data.breakdown.expiredCards.count})</div>
+          </div>
+          <div className="p-3 bg-white/5 rounded-xl text-center">
+            <FileText className="w-5 h-5 text-blue-400 mx-auto mb-2" />
+            <div className="text-lg font-bold text-[var(--text-primary)]">${data.breakdown.incompleteInvoices.recoverable}</div>
+            <div className="text-xs text-[var(--text-muted)]">Incomplete ({data.breakdown.incompleteInvoices.count})</div>
+          </div>
+        </div>
+
+        {/* Action items */}
+        {data.items.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-semibold text-[var(--text-primary)] mb-3">Priority Actions</h4>
+            {data.items.slice(0, 4).map((item, i) => {
+              const IconComponent = typeIcons[item.type];
+              return (
+                <div key={i} className="flex items-start gap-3 p-3 bg-white/5 rounded-xl">
+                  <IconComponent className="w-4 h-4 text-[var(--text-muted)] mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-[var(--text-primary)] text-sm truncate">{item.customerName}</span>
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium border ${priorityColors[item.priority]}`}>
+                        {item.priority}
+                      </span>
+                    </div>
+                    <div className="text-xs text-[var(--text-muted)]">{item.suggestedAction}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-[var(--text-primary)]">${item.amount.toFixed(0)}</div>
+                    <div className="text-xs text-emerald-400">{(item.recoveryProbability * 100).toFixed(0)}% likely</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Methodology */}
+        <div className="mt-4 text-xs text-[var(--text-muted)] p-3 bg-white/5 rounded-lg">
+          {data.methodology}
+        </div>
+      </Card>
+    );
+  };
+
+  // ========================
+  // COMPONENT: Anomaly Alerts
+  // ========================
+  const AnomalyAlertsCard = ({ anomalies }: { anomalies: ZScoreAnomaly[] }) => {
+    if (!anomalies || anomalies.length === 0) return null;
+
+    const severityColors = {
+      unusual: 'bg-amber-500/20 border-amber-500/30 text-amber-400',
+      critical: 'bg-red-500/20 border-red-500/30 text-red-400',
+    };
+
+    return (
+      <Card className="p-4 sm:p-6 glass-card border-amber-500/20">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-amber-400" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-[var(--text-primary)]">Anomaly Detection</h3>
+            <p className="text-sm text-[var(--text-muted)]">Z-Score statistical analysis</p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {anomalies.slice(0, 3).map((anomaly, i) => (
+            <div 
+              key={i} 
+              className={`p-3 rounded-xl border ${severityColors[anomaly.severity]}`}
+            >
+              <div className="flex items-start justify-between gap-2 mb-1">
+                <span className="font-semibold text-[var(--text-primary)] text-sm">
+                  {anomaly.direction === 'spike' ? '📈 Spike' : '📉 Drop'} in {anomaly.metricName}
+                </span>
+                <span className="text-xs px-2 py-0.5 rounded bg-white/10">
+                  {Math.abs(anomaly.zScore).toFixed(1)}σ
+                </span>
+              </div>
+              <p className="text-sm text-[var(--text-secondary)]">{anomaly.explanation}</p>
+              <div className="flex items-center gap-4 mt-2 text-xs text-[var(--text-muted)]">
+                <span>Value: ${anomaly.value.toLocaleString()}</span>
+                <span>Average: ${anomaly.mean.toLocaleString()}</span>
+                <span>Date: {anomaly.date}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    );
+  };
+
+  // ========================
+  // COMPONENT: What-If Simulator
+  // ========================
+  const WhatIfSimulatorCard = ({ baseData }: { baseData: WhatIfBaseData }) => {
+    const [priceChange, setPriceChange] = useState(0);
+    const [churnReduction, setChurnReduction] = useState(0);
+    const [annualConversion, setAnnualConversion] = useState(0);
+    const [result, setResult] = useState<WhatIfResult | null>(null);
+    const [isSimulating, setIsSimulating] = useState(false);
+
+    const runSimulation = useCallback(async () => {
+      if (priceChange === 0 && churnReduction === 0 && annualConversion === 0) {
+        setResult(null);
+        return;
+      }
+
+      setIsSimulating(true);
+      try {
+        const response = await fetch(getApiUrl('/api/whatif/simulate'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({
+            baseData: {
+              currentMRR: baseData.currentMRR,
+              currentChurnRate: baseData.currentChurnRate,
+              currentARPU: baseData.currentARPU,
+              currentCustomers: baseData.currentCustomers,
+              monthlyPlanPercentage: baseData.monthlyPlanPercentage
+            },
+            scenario: {
+              priceChangePercent: priceChange,
+              churnReductionPercent: churnReduction,
+              annualPlanConversionPercent: annualConversion
+            }
+          })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setResult(data);
+        }
+      } catch (error) {
+        console.error('Simulation error:', error);
+      } finally {
+        setIsSimulating(false);
+      }
+    }, [baseData, priceChange, churnReduction, annualConversion]);
+
+    // Auto-simulate on slider change (debounced)
+    useEffect(() => {
+      const timer = setTimeout(runSimulation, 500);
+      return () => clearTimeout(timer);
+    }, [priceChange, churnReduction, annualConversion, runSimulation]);
+
+    return (
+      <Card className="p-4 sm:p-6 glass-card">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center">
+            <Sliders className="w-5 h-5 text-cyan-400" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-[var(--text-primary)]">What-If Simulator</h3>
+            <p className="text-sm text-[var(--text-muted)]">Model different business scenarios</p>
+          </div>
+        </div>
+
+        {/* Sliders */}
+        <div className="space-y-6 mb-6">
+          {/* Price Change Slider */}
+          <div>
+            <div className="flex justify-between mb-2">
+              <label className="text-sm font-semibold text-[var(--text-secondary)]">Price Change</label>
+              <span className={`text-sm font-bold ${priceChange > 0 ? 'text-emerald-400' : priceChange < 0 ? 'text-red-400' : 'text-[var(--text-muted)]'}`}>
+                {priceChange > 0 ? '+' : ''}{priceChange}%
+              </span>
+            </div>
+            <input
+              type="range"
+              min="-30"
+              max="30"
+              value={priceChange}
+              onChange={(e) => setPriceChange(Number(e.target.value))}
+              className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+            />
+            <div className="flex justify-between text-xs text-[var(--text-muted)] mt-1">
+              <span>-30%</span>
+              <span>0%</span>
+              <span>+30%</span>
+            </div>
+          </div>
+
+          {/* Churn Reduction Slider */}
+          <div>
+            <div className="flex justify-between mb-2">
+              <label className="text-sm font-semibold text-[var(--text-secondary)]">Churn Reduction</label>
+              <span className={`text-sm font-bold ${churnReduction > 0 ? 'text-emerald-400' : 'text-[var(--text-muted)]'}`}>
+                -{churnReduction}%
+              </span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="5"
+              step="0.5"
+              value={churnReduction}
+              onChange={(e) => setChurnReduction(Number(e.target.value))}
+              className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+            />
+            <div className="flex justify-between text-xs text-[var(--text-muted)] mt-1">
+              <span>0%</span>
+              <span>5%</span>
+            </div>
+          </div>
+
+          {/* Annual Plan Conversion Slider */}
+          <div>
+            <div className="flex justify-between mb-2">
+              <label className="text-sm font-semibold text-[var(--text-secondary)]">Annual Plan Conversion</label>
+              <span className={`text-sm font-bold ${annualConversion > 0 ? 'text-purple-400' : 'text-[var(--text-muted)]'}`}>
+                {annualConversion}%
+              </span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="50"
+              step="5"
+              value={annualConversion}
+              onChange={(e) => setAnnualConversion(Number(e.target.value))}
+              className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-purple-500"
+            />
+            <div className="flex justify-between text-xs text-[var(--text-muted)] mt-1">
+              <span>0%</span>
+              <span>50%</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Results */}
+        {isSimulating && (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
+          </div>
+        )}
+
+        {result && !isSimulating && (
+          <div className="space-y-4">
+            {/* Impact Summary */}
+            <div className={`p-4 rounded-xl ${result.impact.mrrDeltaPercent > 0 ? 'bg-emerald-500/10 border border-emerald-500/20' : result.impact.mrrDeltaPercent < 0 ? 'bg-red-500/10 border border-red-500/20' : 'bg-white/5 border border-white/10'}`}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-semibold text-[var(--text-secondary)]">12-Month Impact</span>
+                <span className={`text-lg font-black ${result.impact.mrrDeltaPercent > 0 ? 'text-emerald-400' : result.impact.mrrDeltaPercent < 0 ? 'text-red-400' : 'text-[var(--text-muted)]'}`}>
+                  {result.impact.mrrDeltaPercent > 0 ? '+' : ''}{result.impact.mrrDeltaPercent.toFixed(1)}%
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-[var(--text-muted)]">MRR Delta</span>
+                  <p className={`font-bold ${result.impact.mrrDelta > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {result.impact.mrrDelta > 0 ? '+' : ''}${result.impact.mrrDelta.toLocaleString()}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-[var(--text-muted)]">ARR Delta</span>
+                  <p className={`font-bold ${result.impact.arrDelta > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {result.impact.arrDelta > 0 ? '+' : ''}${result.impact.arrDelta.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Projected Metrics */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 bg-white/5 rounded-xl">
+                <span className="text-xs text-[var(--text-muted)]">Projected MRR</span>
+                <p className="text-lg font-bold text-[var(--text-primary)]">${result.projectedMetrics.mrr.toLocaleString()}</p>
+              </div>
+              <div className="p-3 bg-white/5 rounded-xl">
+                <span className="text-xs text-[var(--text-muted)]">Projected Churn</span>
+                <p className="text-lg font-bold text-[var(--text-primary)]">{result.projectedMetrics.churnRate}%</p>
+              </div>
+            </div>
+
+            {/* Changes List */}
+            {result.changes.length > 0 && (
+              <div className="space-y-2">
+                {result.changes.map((change, i) => (
+                  <div key={i} className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
+                    <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                    <span>{change}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Recommendation */}
+            <div className="p-3 bg-purple-500/10 rounded-xl border border-purple-500/20">
+              <p className="text-sm text-purple-300">{result.impact.recommendation}</p>
+            </div>
+          </div>
+        )}
+
+        {!result && !isSimulating && (
+          <div className="text-center py-8 text-[var(--text-muted)]">
+            <Calculator className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p className="text-sm">Adjust the sliders above to see projections</p>
+          </div>
+        )}
+      </Card>
+    );
+  };
+
+  // ========================
+  // COMPONENT: Smart Alerts
+  // ========================
+  const SmartAlertsCard = ({ alerts }: { alerts: SmartAlert[] }) => {
+    const [showAll, setShowAll] = useState(false);
+    
+    if (!alerts || alerts.length === 0) return null;
+
+    const displayAlerts = showAll ? alerts : alerts.slice(0, 3);
+    const unreadCount = alerts.filter(a => !a.isRead).length;
+
+    const priorityColors = {
+      low: 'bg-blue-500/20 border-blue-500/30 text-blue-400',
+      medium: 'bg-amber-500/20 border-amber-500/30 text-amber-400',
+      high: 'bg-orange-500/20 border-orange-500/30 text-orange-400',
+      critical: 'bg-red-500/20 border-red-500/30 text-red-400',
+    };
+
+    const priorityIcons = {
+      low: <Info className="w-4 h-4" />,
+      medium: <AlertCircle className="w-4 h-4" />,
+      high: <AlertTriangle className="w-4 h-4" />,
+      critical: <Flame className="w-4 h-4" />,
+    };
+
+    return (
+      <Card className="p-4 sm:p-6 glass-card">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center relative">
+              <Bell className="w-5 h-5 text-orange-400" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold">
+                  {unreadCount}
+                </span>
+              )}
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-[var(--text-primary)]">Smart Alerts</h3>
+              <p className="text-sm text-[var(--text-muted)]">Automated monitoring</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {displayAlerts.map((alert) => (
+            <div 
+              key={alert.id}
+              className={`p-3 rounded-xl border ${priorityColors[alert.priority]} ${!alert.isRead ? 'ring-1 ring-white/10' : ''}`}
+            >
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 mt-0.5">
+                  {priorityIcons[alert.priority]}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <h4 className="font-semibold text-[var(--text-primary)] text-sm truncate">{alert.title}</h4>
+                    <span className="text-xs text-[var(--text-muted)] flex-shrink-0">
+                      {formatDistanceToNow(new Date(alert.triggeredAt), { addSuffix: true })}
+                    </span>
+                  </div>
+                  <p className="text-sm text-[var(--text-secondary)]">{alert.message}</p>
+                  {alert.value !== undefined && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-xs px-2 py-0.5 rounded bg-white/10 text-[var(--text-muted)]">
+                        Value: {typeof alert.value === 'number' ? alert.value.toFixed(1) : alert.value}%
+                      </span>
+                      {alert.threshold && (
+                        <span className="text-xs text-[var(--text-muted)]">
+                          Threshold: {alert.threshold}%
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {alerts.length > 3 && (
+          <Button 
+            variant="ghost" 
+            className="w-full mt-4 text-purple-400 hover:text-purple-300"
+            onClick={() => setShowAll(!showAll)}
+          >
+            {showAll ? 'Show Less' : `Show All (${alerts.length})`}
+          </Button>
+        )}
+      </Card>
+    );
+  };
+
+  // ========================
+  // COMPONENT: Benchmarking
+  // ========================
+  const BenchmarkingCard = ({ data }: { data: BenchmarkingData }) => {
+    const ratingColors = {
+      excellent: 'text-emerald-400',
+      good: 'text-green-400',
+      average: 'text-amber-400',
+      below_average: 'text-orange-400',
+      needs_improvement: 'text-red-400',
+    };
+
+    const ratingBgColors = {
+      excellent: 'bg-emerald-500/20',
+      good: 'bg-green-500/20',
+      average: 'bg-amber-500/20',
+      below_average: 'bg-orange-500/20',
+      needs_improvement: 'bg-red-500/20',
+    };
+
+    const PercentileBar = ({ percentile, rating }: { percentile: BenchmarkPercentile; rating: string }) => (
+      <div className="space-y-1">
+        <div className="flex justify-between text-xs">
+          <span className="text-[var(--text-muted)]">0%</span>
+          <span className={`font-bold ${ratingColors[percentile.rating]}`}>
+            Top {100 - percentile.percentile}%
+          </span>
+          <span className="text-[var(--text-muted)]">100%</span>
+        </div>
+        <div className="h-2 bg-white/10 rounded-full overflow-hidden relative">
+          <div 
+            className={`h-full ${ratingBgColors[percentile.rating]} rounded-full transition-all duration-500`}
+            style={{ width: `${percentile.percentile}%` }}
+          />
+          <div 
+            className="absolute top-0 h-full w-1 bg-white rounded-full shadow-lg"
+            style={{ left: `${percentile.percentile}%`, transform: 'translateX(-50%)' }}
+          />
+        </div>
+      </div>
+    );
+
+    // Radar chart data
+    const radarData = [
+      { metric: 'MRR', value: data.percentiles.mrr.percentile, fullMark: 100 },
+      { metric: 'Growth', value: data.percentiles.growthRate.percentile, fullMark: 100 },
+      { metric: 'ARPU', value: data.percentiles.arpu.percentile, fullMark: 100 },
+      { metric: 'Retention', value: 100 - data.percentiles.churnRate.percentile, fullMark: 100 },
+    ];
+
+    return (
+      <Card className="p-4 sm:p-6 glass-card">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center">
+            <Trophy className="w-5 h-5 text-violet-400" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-[var(--text-primary)]">Industry Benchmarking</h3>
+            <p className="text-sm text-[var(--text-muted)]">
+              <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-400 text-xs font-semibold">
+                {data.industryComparison.segment}
+              </span>
+              <span className="ml-2">segment</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Radar Chart */}
+        <div className="h-48 mb-6">
+          <ResponsiveContainer width="100%" height="100%">
+            <RadarChart data={radarData}>
+              <PolarGrid stroke="rgba(255,255,255,0.1)" />
+              <PolarAngleAxis dataKey="metric" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} />
+              <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+              <Radar
+                name="Your Performance"
+                dataKey="value"
+                stroke="#8b5cf6"
+                fill="#8b5cf6"
+                fillOpacity={0.3}
+              />
+            </RadarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Percentile Breakdown */}
+        <div className="space-y-4">
+          {/* MRR */}
+          <div className="p-3 bg-white/5 rounded-xl">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-semibold text-[var(--text-primary)]">MRR</span>
+              <span className="text-sm text-[var(--text-muted)]">${data.yourMetrics.mrr.toLocaleString()}</span>
+            </div>
+            <PercentileBar percentile={data.percentiles.mrr} rating="mrr" />
+            <p className="text-xs text-[var(--text-muted)] mt-2">{data.percentiles.mrr.comparison}</p>
+          </div>
+
+          {/* Churn Rate */}
+          <div className="p-3 bg-white/5 rounded-xl">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-semibold text-[var(--text-primary)]">Churn Rate</span>
+              <span className="text-sm text-[var(--text-muted)]">{data.yourMetrics.churnRate.toFixed(1)}%</span>
+            </div>
+            <PercentileBar percentile={data.percentiles.churnRate} rating="churn" />
+            <p className="text-xs text-[var(--text-muted)] mt-2">{data.percentiles.churnRate.comparison}</p>
+          </div>
+
+          {/* ARPU */}
+          <div className="p-3 bg-white/5 rounded-xl">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-semibold text-[var(--text-primary)]">ARPU</span>
+              <span className="text-sm text-[var(--text-muted)]">${data.yourMetrics.arpu.toFixed(0)}</span>
+            </div>
+            <PercentileBar percentile={data.percentiles.arpu} rating="arpu" />
+            <p className="text-xs text-[var(--text-muted)] mt-2">{data.percentiles.arpu.comparison}</p>
+          </div>
+        </div>
+
+        {/* Recommendations */}
+        {data.recommendations.length > 0 && (
+          <div className="mt-6 space-y-2">
+            <h4 className="text-sm font-semibold text-[var(--text-secondary)]">Recommendations</h4>
+            {data.recommendations.map((rec, i) => (
+              <div key={i} className="p-3 bg-purple-500/10 rounded-xl border border-purple-500/20">
+                <p className="text-sm text-[var(--text-secondary)]">{rec}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Industry Comparison */}
+        <div className="mt-6 p-4 bg-white/5 rounded-xl">
+          <h4 className="text-sm font-semibold text-[var(--text-secondary)] mb-3">
+            {data.industryComparison.segment} Segment Averages
+          </h4>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <span className="text-[var(--text-muted)]">Avg MRR</span>
+              <p className="font-bold text-[var(--text-primary)]">${data.industryComparison.avgMRR.toLocaleString()}</p>
+            </div>
+            <div>
+              <span className="text-[var(--text-muted)]">Avg Churn</span>
+              <p className="font-bold text-[var(--text-primary)]">{data.industryComparison.avgChurnRate}%</p>
+            </div>
+            <div>
+              <span className="text-[var(--text-muted)]">Avg ARPU</span>
+              <p className="font-bold text-[var(--text-primary)]">${data.industryComparison.avgARPU}</p>
+            </div>
+            <div>
+              <span className="text-[var(--text-muted)]">Avg Growth</span>
+              <p className="font-bold text-[var(--text-primary)]">{data.industryComparison.avgGrowthRate}%</p>
+            </div>
+          </div>
+        </div>
+      </Card>
+    );
+  };
+
+  // ========================
+  // COMPONENT: Public Snapshot
+  // ========================
+  const PublicSnapshotCard = () => {
+    const [isCreating, setIsCreating] = useState(false);
+    const [snapshot, setSnapshot] = useState<{ shareUrl: string; viewCount: number } | null>(null);
+    const [settings, setSettings] = useState({
+      showMRR: true,
+      showARR: true,
+      showCustomerCount: true,
+      showChurnRate: false,
+      showGrowthTrend: true,
+      anonymizeAmounts: false,
+      blurSensitiveData: false,
+      customTitle: 'My Business Metrics',
+    });
+
+    useEffect(() => {
+      // Check if user has existing snapshot
+      const checkSnapshot = async () => {
+        try {
+          const response = await fetch(getApiUrl('/api/snapshot/mine'), {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            if (data.hasSnapshot) {
+              setSnapshot({ shareUrl: data.shareUrl, viewCount: data.snapshot.viewCount });
+            }
+          }
+        } catch (error) {
+          console.error('Error checking snapshot:', error);
+        }
+      };
+      checkSnapshot();
+    }, []);
+
+    const createSnapshot = async () => {
+      setIsCreating(true);
+      try {
+        const response = await fetch(getApiUrl('/api/snapshot/create'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ settings, metrics })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setSnapshot({ shareUrl: data.shareUrl, viewCount: 0 });
+          toast.success('Public snapshot created!');
+        }
+      } catch (error) {
+        toast.error('Failed to create snapshot');
+      } finally {
+        setIsCreating(false);
+      }
+    };
+
+    const copyLink = () => {
+      if (snapshot) {
+        navigator.clipboard.writeText(window.location.origin + snapshot.shareUrl);
+        toast.success('Link copied to clipboard!');
+      }
+    };
+
+    return (
+      <Card className="p-4 sm:p-6 glass-card">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500/20 to-rose-500/20 flex items-center justify-center">
+            <Share2 className="w-5 h-5 text-pink-400" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-[var(--text-primary)]">Public Snapshot</h3>
+            <p className="text-sm text-[var(--text-muted)]">Share your metrics publicly</p>
+          </div>
+        </div>
+
+        {snapshot ? (
+          <div className="space-y-4">
+            {/* Active Snapshot */}
+            <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+              <div className="flex items-center gap-2 mb-2">
+                <Globe className="w-4 h-4 text-emerald-400" />
+                <span className="text-sm font-semibold text-emerald-400">Snapshot Active</span>
+              </div>
+              <div className="flex items-center gap-2 mb-3">
+                <code className="flex-1 text-xs bg-black/30 px-3 py-2 rounded-lg text-[var(--text-secondary)] truncate">
+                  {window.location.origin}{snapshot.shareUrl}
+                </code>
+                <Button size="sm" variant="ghost" onClick={copyLink} className="text-purple-400">
+                  <Copy className="w-4 h-4" />
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  onClick={() => window.open(snapshot.shareUrl, '_blank')}
+                  className="text-purple-400"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
+                <Eye className="w-3 h-3" />
+                <span>{snapshot.viewCount} views</span>
+              </div>
+            </div>
+
+            <Button 
+              variant="outline" 
+              className="w-full border-pink-500/30 text-pink-400 hover:bg-pink-500/10"
+              onClick={createSnapshot}
+              disabled={isCreating}
+            >
+              {isCreating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+              Regenerate Snapshot
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Settings */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-[var(--text-secondary)]">What to include:</h4>
+              
+              {[
+                { key: 'showMRR', label: 'Monthly Recurring Revenue' },
+                { key: 'showARR', label: 'Annual Recurring Revenue' },
+                { key: 'showCustomerCount', label: 'Customer Count' },
+                { key: 'showChurnRate', label: 'Churn Rate' },
+                { key: 'showGrowthTrend', label: 'Growth Trend Chart' },
+              ].map(({ key, label }) => (
+                <label key={key} className="flex items-center justify-between cursor-pointer group">
+                  <span className="text-sm text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]">{label}</span>
+                  <button
+                    onClick={() => setSettings(s => ({ ...s, [key]: !s[key as keyof typeof s] }))}
+                    className="relative"
+                  >
+                    {settings[key as keyof typeof settings] ? (
+                      <ToggleRight className="w-8 h-8 text-purple-400" />
+                    ) : (
+                      <ToggleLeft className="w-8 h-8 text-[var(--text-muted)]" />
+                    )}
+                  </button>
+                </label>
+              ))}
+            </div>
+
+            <div className="border-t border-white/10 pt-4 space-y-3">
+              <h4 className="text-sm font-semibold text-[var(--text-secondary)]">Privacy options:</h4>
+              
+              <label className="flex items-center justify-between cursor-pointer group">
+                <span className="text-sm text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]">Anonymize amounts (show % only)</span>
+                <button onClick={() => setSettings(s => ({ ...s, anonymizeAmounts: !s.anonymizeAmounts }))}>
+                  {settings.anonymizeAmounts ? (
+                    <ToggleRight className="w-8 h-8 text-purple-400" />
+                  ) : (
+                    <ToggleLeft className="w-8 h-8 text-[var(--text-muted)]" />
+                  )}
+                </button>
+              </label>
+
+              <label className="flex items-center justify-between cursor-pointer group">
+                <span className="text-sm text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]">Round/blur sensitive numbers</span>
+                <button onClick={() => setSettings(s => ({ ...s, blurSensitiveData: !s.blurSensitiveData }))}>
+                  {settings.blurSensitiveData ? (
+                    <ToggleRight className="w-8 h-8 text-purple-400" />
+                  ) : (
+                    <ToggleLeft className="w-8 h-8 text-[var(--text-muted)]" />
+                  )}
+                </button>
+              </label>
+            </div>
+
+            <Button 
+              className="w-full btn-primary"
+              onClick={createSnapshot}
+              disabled={isCreating}
+            >
+              {isCreating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Share2 className="w-4 h-4 mr-2" />}
+              Create Public Snapshot
+            </Button>
+
+            <p className="text-xs text-[var(--text-muted)] text-center">
+              Share your metrics on social media or with investors
+            </p>
+          </div>
+        )}
       </Card>
     );
   };
@@ -1115,6 +2414,110 @@ export default function Dashboard() {
                 </div>
               )}
             </Card>
+
+            {/* ======================== */}
+            {/* ADVANCED ANALYTICS SECTION */}
+            {/* ======================== */}
+            
+            {/* Section Header */}
+            <div className="mt-8 sm:mt-12 mb-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+                <h2 className="text-xl sm:text-2xl font-black text-[var(--text-primary)]">Advanced Analytics</h2>
+              </div>
+              <p className="text-sm text-[var(--text-muted)] ml-13">
+                Powerful insights powered by statistical algorithms • No AI, pure deterministic logic
+              </p>
+            </div>
+
+            {/* Anomaly Detection Alert */}
+            {metrics.anomalies && metrics.anomalies.length > 0 && (
+              <div className="mb-6">
+                <AnomalyAlertsCard anomalies={metrics.anomalies} />
+              </div>
+            )}
+
+            {/* Recoverable Revenue - High Impact */}
+            {metrics.recoverableRevenue && metrics.recoverableRevenue.totalRecoverable > 0 && (
+              <div className="mb-6">
+                <RecoverableRevenueCard data={metrics.recoverableRevenue} />
+              </div>
+            )}
+
+            {/* Two Column Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              {/* Business Timeline */}
+              {metrics.businessTimeline && metrics.businessTimeline.length > 0 && (
+                <BusinessTimelineCard events={metrics.businessTimeline} />
+              )}
+              
+              {/* Payment Funnel */}
+              {metrics.paymentFunnel && (
+                <PaymentFunnelCard data={metrics.paymentFunnel} />
+              )}
+            </div>
+
+            {/* Full Width: Cohort Retention */}
+            {metrics.cohortRetention && metrics.cohortRetention.cohorts.length > 0 && (
+              <div className="mb-6">
+                <CohortRetentionCard data={metrics.cohortRetention} />
+              </div>
+            )}
+
+            {/* Two Column Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              {/* Pareto Analysis */}
+              {metrics.paretoAnalysis && (
+                <ParetoAnalysisCard data={metrics.paretoAnalysis} />
+              )}
+              
+              {/* Revenue Forecasting */}
+              {metrics.revenueForecasting && (
+                <RevenueForecastingCard data={metrics.revenueForecasting} />
+              )}
+            </div>
+
+            {/* ======================== */}
+            {/* NEW FEATURES SECTION */}
+            {/* ======================== */}
+            
+            {/* Section Header: Pro Tools */}
+            <div className="mt-8 sm:mt-12 mb-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+                  <Zap className="w-5 h-5 text-white" />
+                </div>
+                <h2 className="text-xl sm:text-2xl font-black text-[var(--text-primary)]">Pro Tools</h2>
+              </div>
+              <p className="text-sm text-[var(--text-muted)] ml-13">
+                Simulate scenarios, monitor alerts, and benchmark your performance
+              </p>
+            </div>
+
+            {/* Smart Alerts - Always visible if there are alerts */}
+            {metrics.smartAlerts && metrics.smartAlerts.length > 0 && (
+              <div className="mb-6">
+                <SmartAlertsCard alerts={metrics.smartAlerts} />
+              </div>
+            )}
+
+            {/* Three Column Layout for Pro Tools */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-6">
+              {/* What-If Simulator */}
+              {metrics.whatIfBaseData && (
+                <WhatIfSimulatorCard baseData={metrics.whatIfBaseData} />
+              )}
+              
+              {/* Public Snapshot */}
+              <PublicSnapshotCard />
+              
+              {/* Benchmarking - only if we have data */}
+              {metrics.benchmarking && (
+                <BenchmarkingCard data={metrics.benchmarking} />
+              )}
+            </div>
 
             {/* Pro Upgrade CTA (for free users) */}
             {user?.subscription?.plan !== 'pro' && (
