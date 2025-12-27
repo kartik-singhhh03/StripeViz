@@ -79,3 +79,4 @@ export function getAuthHeaders(): HeadersInit {
   const token = getAuthToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
+export { apiFetch as apiRequest };
