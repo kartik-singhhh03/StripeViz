@@ -1,4 +1,43 @@
 import "dotenv/config";
+// IMPORTANT: Load env validation immediately after dotenv
+import { config, logConfigStatus } from "./lib/env";
+
+// ============================================
+// Process-Level Error Handlers (Production Safety)
+// ============================================
+
+// Handle uncaught exceptions - log and exit gracefully
+process.on('uncaughtException', (error) => {
+  console.error('❌ UNCAUGHT EXCEPTION - Server shutting down...');
+  console.error(error);
+  // Give time for logging to complete
+  setTimeout(() => process.exit(1), 1000);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ UNHANDLED REJECTION at:', promise);
+  console.error('Reason:', reason);
+  // In production, you might want to exit here too
+  // For now, just log - process continues
+});
+
+// Handle SIGTERM (graceful shutdown)
+process.on('SIGTERM', () => {
+  console.log('🛑 SIGTERM received - Graceful shutdown initiated...');
+  // Close database connections, etc.
+  process.exit(0);
+});
+
+// Handle SIGINT (Ctrl+C)
+process.on('SIGINT', () => {
+  console.log('\n🛑 SIGINT received - Shutting down...');
+  process.exit(0);
+});
+
+// Log config status on startup
+logConfigStatus();
+
 import express from "express";
 import cors from "cors";
 import session from "express-session";
@@ -54,6 +93,13 @@ import {
 } from "./routes/public-snapshot";
 import { handleGetBenchmarking, handleGetIndustryBenchmarks } from "./routes/benchmarking";
 
+// Paddle payment routes
+import paddleCheckoutRouter from "./routes/paddle-checkout";
+import paddleWebhookRouter from "./routes/paddle-webhook";
+
+// User settings routes
+import userSettingsRouter from "./routes/user-settings";
+
 // Security imports
 import {
   securityHeaders,
@@ -102,20 +148,29 @@ export function createServer() {
   );
 
   // ========================
+  // PADDLE WEBHOOK - Must be before body parsers for raw body access
+  // ========================
+  app.use(
+    "/api/webhooks/paddle",
+    webhookRateLimiter,
+    express.json(), // Paddle sends JSON
+    paddleWebhookRouter
+  );
+
+  // ========================
   // Session middleware for OAuth state management
   // ========================
-  const isProduction = process.env.NODE_ENV === "production";
   app.use(
     session({
-      secret: process.env.SESSION_SECRET || "your-session-secret-change-in-production",
+      secret: config.sessionSecret,
       resave: false,
       saveUninitialized: true, // Need to save for OAuth state
-      name: isProduction ? "__Host-session" : "session", // __Host- requires HTTPS
+      name: config.isProduction ? "__Host-session" : "session", // __Host- requires HTTPS
       cookie: {
-        secure: isProduction,
+        secure: config.isProduction,
         httpOnly: true,
         maxAge: 10 * 60 * 1000, // 10 minutes (only for OAuth flow)
-        sameSite: isProduction ? "strict" : "lax", // Lax needed for OAuth redirects in dev
+        sameSite: config.isProduction ? "strict" : "lax", // Lax needed for OAuth redirects in dev
         path: "/",
       },
     })
@@ -125,7 +180,7 @@ export function createServer() {
   // CORS configuration - Strict origin control
   // ========================
   const allowedOrigins = [
-    process.env.FRONTEND_URL || "http://localhost:8080",
+    config.frontendUrl,
     "http://localhost:8080",
     "http://localhost:8081",
     "http://localhost:5173",
@@ -138,7 +193,7 @@ export function createServer() {
         if (!origin) return callback(null, true);
         
         // In development, allow localhost on any port
-        if (!isProduction && origin?.startsWith("http://localhost:")) {
+        if (config.isDevelopment && origin?.startsWith("http://localhost:")) {
           return callback(null, true);
         }
         
@@ -238,35 +293,45 @@ export function createServer() {
   app.get("/api/demo", handleDemo);
 
   // ========================
-  // What-If Simulator routes
+  // What-If Simulator routes (Pro feature)
   // ========================
-  app.post("/api/whatif/simulate", authMiddleware, handleWhatIfSimulation);
-  app.post("/api/whatif/batch", authMiddleware, handleBatchWhatIfSimulation);
+  app.post("/api/whatif/simulate", authMiddleware, requireProPlan, handleWhatIfSimulation);
+  app.post("/api/whatif/batch", authMiddleware, requireProPlan, handleBatchWhatIfSimulation);
 
   // ========================
-  // Smart Alerts routes
+  // Smart Alerts routes (Pro feature)
   // ========================
   app.get("/api/alerts", authMiddleware, handleGetAlerts);
   app.post("/api/alerts/:id/read", authMiddleware, handleMarkAlertRead);
   app.post("/api/alerts/read-all", authMiddleware, handleMarkAllAlertsRead);
-  app.get("/api/alerts/preferences", authMiddleware, handleGetAlertPreferences);
-  app.put("/api/alerts/preferences", authMiddleware, handleUpdateAlertPreferences);
+  app.get("/api/alerts/preferences", authMiddleware, requireProPlan, handleGetAlertPreferences);
+  app.put("/api/alerts/preferences", authMiddleware, requireProPlan, handleUpdateAlertPreferences);
 
   // ========================
-  // Public Snapshot routes
+  // Public Snapshot routes (Pro feature)
   // ========================
-  app.post("/api/snapshot/create", authMiddleware, handleCreateSnapshot);
+  app.post("/api/snapshot/create", authMiddleware, requireProPlan, handleCreateSnapshot);
   app.get("/api/snapshot/mine", authMiddleware, handleGetMySnapshot);
   app.delete("/api/snapshot/:token", authMiddleware, handleDeleteSnapshot);
-  app.put("/api/snapshot/:token/settings", authMiddleware, handleUpdateSnapshotSettings);
+  app.put("/api/snapshot/:token/settings", authMiddleware, requireProPlan, handleUpdateSnapshotSettings);
   // Public endpoint (no auth)
   app.get("/api/snapshot/:token", handleGetPublicSnapshot);
 
   // ========================
-  // Benchmarking routes
+  // Benchmarking routes (Pro feature)
   // ========================
-  app.get("/api/benchmarking", authMiddleware, handleGetBenchmarking);
+  app.get("/api/benchmarking", authMiddleware, requireProPlan, handleGetBenchmarking);
   app.get("/api/benchmarking/industry", handleGetIndustryBenchmarks);
+
+  // ========================
+  // Paddle Payment routes
+  // ========================
+  app.use("/api/payments", paddleCheckoutRouter);
+
+  // ========================
+  // User Settings routes
+  // ========================
+  app.use("/api/user", userSettingsRouter);
 
   // ========================
   // Error handler - must be last

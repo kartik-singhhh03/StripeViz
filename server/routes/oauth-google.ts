@@ -4,9 +4,10 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { OAUTH_CONFIG, generateOAuthState } from "../lib/oauth-config";
 import { AuthRequest } from "../lib/middleware";
+import { config } from "../lib/env";
 
 const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET || "your-super-secret-jwt-key-change-in-production";
+const JWT_SECRET = config.jwtSecret;
 const JWT_EXPIRES_IN = "7d"; // 7 days
 
 interface GoogleUserInfo {

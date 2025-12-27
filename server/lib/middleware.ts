@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { extractTokenFromHeader, verifyToken } from "./auth";
+import { extractTokenFromHeader, verifyToken, shouldRefreshToken, refreshToken } from "./auth";
 
 export interface AuthRequest extends Request {
   userId?: string;
@@ -21,11 +21,20 @@ export const authMiddleware = (
   const payload = verifyToken(token);
 
   if (!payload) {
-    res.status(401).json({ error: "Invalid token" });
+    res.status(401).json({ error: "Invalid or expired token" });
     return;
   }
 
   req.userId = payload.userId;
   req.userEmail = payload.email;
+  
+  // Check if token should be refreshed and add header for client
+  if (shouldRefreshToken(token)) {
+    const newToken = refreshToken(token);
+    if (newToken) {
+      res.setHeader('X-Token-Refresh', newToken);
+    }
+  }
+  
   next();
 };

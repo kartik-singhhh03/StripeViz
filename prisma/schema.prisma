@@ -56,22 +56,27 @@ model StripeConnection {
 model Subscription {
   id                    String    @id @default(cuid())
   userId                String    @unique
-  stripeCustomerId      String    @unique
-  stripeSubscriptionId  String?   @unique  // Null for free/lifetime users
   
-  // Plan: "free" | "pro" | "business" | "lifetime"
-  plan                  String    @default("free")
+  // Paddle fields (primary payment provider)
+  paddleCustomerId      String?   @unique
+  paddleSubscriptionId  String?   @unique
+  paddlePriceId         String?
   
-  // Billing interval: "monthly" | "yearly" | "lifetime" | null (for free)
-  interval              String?
-  
-  // Status: "active" | "canceled" | "past_due" | "trialing" | "incomplete"
-  status                String    @default("active")
-  
-  // Stripe Price ID used (for tracking which price they're on)
+  // Legacy Stripe fields (for migration)
+  stripeCustomerId      String?   @unique
+  stripeSubscriptionId  String?   @unique
   stripePriceId         String?
   
-  // Billing period dates (null for lifetime)
+  // Plan: "free" | "pro" | "enterprise"
+  plan                  String    @default("free")
+  
+  // Billing interval: "monthly" | "yearly" | null (for free)
+  billingCycle          String?
+  
+  // Status: "active" | "canceled" | "past_due" | "trialing" | "paused"
+  status                String    @default("active")
+  
+  // Billing period dates
   currentPeriodStart    DateTime?
   currentPeriodEnd      DateTime?
   

@@ -1,16 +1,16 @@
 import Stripe from "stripe";
+import { config, isFeatureEnabled } from "./env";
 
 // Lazy load Stripe instance
 export async function getStripeInstance(): Promise<Stripe> {
-  if (!process.env.STRIPE_SECRET_KEY) {
-    throw new Error("STRIPE_SECRET_KEY not configured");
+  if (!isFeatureEnabled('stripe')) {
+    throw new Error("Stripe is not configured. Set STRIPE_SECRET_KEY in environment.");
   }
-  return new Stripe(process.env.STRIPE_SECRET_KEY);
+  return new Stripe(config.stripe.secretKey);
 }
 
-export const STRIPE_OAUTH_CLIENT_ID = process.env.STRIPE_OAUTH_CLIENT_ID || "";
-export const STRIPE_OAUTH_REDIRECT_URI =
-  process.env.STRIPE_OAUTH_REDIRECT_URI || "http://localhost:8080/api/stripe/oauth-callback";
+export const STRIPE_OAUTH_CLIENT_ID = config.stripe.oauthClientId;
+export const STRIPE_OAUTH_REDIRECT_URI = config.stripe.oauthRedirectUri;
 
 export function getStripeOAuthUrl(): string {
   const params = new URLSearchParams({
@@ -33,13 +33,17 @@ export async function exchangeOAuthCode(code: string): Promise<{
   stripe_account_id: string;
   stripe_user_id: string;
 }> {
+  if (!isFeatureEnabled('stripe')) {
+    throw new Error("Stripe is not configured");
+  }
+  
   const response = await fetch("https://connect.stripe.com/oauth/token", {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: new URLSearchParams({
-      client_secret: process.env.STRIPE_SECRET_KEY || "",
+      client_secret: config.stripe.secretKey,
       code: code,
       grant_type: "authorization_code",
     }).toString(),

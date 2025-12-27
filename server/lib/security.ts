@@ -11,6 +11,7 @@
 
 import { Request, Response, NextFunction, RequestHandler } from "express";
 import crypto from "crypto";
+import { config } from "./env";
 
 // ========================
 // RATE LIMITING
@@ -207,12 +208,12 @@ export const securityHeaders: RequestHandler = (_req: Request, res: Response, ne
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://cdn.paddle.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: https: blob:",
-      "connect-src 'self' https://api.stripe.com https://accounts.google.com https://github.com",
-      "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+      "connect-src 'self' https://api.stripe.com https://accounts.google.com https://github.com https://api.paddle.com https://sandbox-api.paddle.com https://checkout.paddle.com https://sandbox-checkout.paddle.com",
+      "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://checkout.paddle.com https://sandbox-checkout.paddle.com",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -220,7 +221,7 @@ export const securityHeaders: RequestHandler = (_req: Request, res: Response, ne
   );
   
   // HSTS (only in production with HTTPS)
-  if (process.env.NODE_ENV === "production") {
+  if (config.isProduction) {
     res.setHeader(
       "Strict-Transport-Security",
       "max-age=31536000; includeSubDomains; preload"
@@ -361,7 +362,7 @@ export const sanitizeInput: RequestHandler = (req: Request, _res: Response, next
 
 export const cookieSettings = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
+  secure: config.isProduction,
   sameSite: "strict" as const,
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   path: "/",

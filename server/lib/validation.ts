@@ -184,6 +184,55 @@ export const oauthCallbackSchema = z.object({
 });
 
 // ========================
+// PADDLE SCHEMAS
+// ========================
+
+export const paddleCheckoutSchema = z.object({
+  plan: z.enum(['pro', 'enterprise']),
+  billingCycle: z.enum(['monthly', 'yearly']),
+  successUrl: z.string().url().optional(),
+  cancelUrl: z.string().url().optional(),
+});
+
+export const paddlePriceIdSchema = z.string().regex(
+  /^pri_[a-z0-9]+$/,
+  'Invalid Paddle price ID format'
+);
+
+export const paddleCustomerIdSchema = z.string().regex(
+  /^ctm_[a-z0-9]+$/,
+  'Invalid Paddle customer ID format'
+);
+
+export const paddleSubscriptionIdSchema = z.string().regex(
+  /^sub_[a-z0-9]+$/,
+  'Invalid Paddle subscription ID format'
+);
+
+// ========================
+// ACCOUNT SETTINGS SCHEMAS
+// ========================
+
+export const updateAccountSchema = z.object({
+  name: safeString.pipe(z.string().min(1).max(100)).optional(),
+  email: email.optional(),
+});
+
+export const updatePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required'),
+  newPassword: password,
+  confirmPassword: z.string(),
+}).refine(
+  (data) => data.newPassword === data.confirmPassword,
+  { message: 'Passwords do not match', path: ['confirmPassword'] }
+);
+
+export const deleteAccountSchema = z.object({
+  password: z.string().min(1, 'Password is required to confirm account deletion'),
+  confirmation: z.literal('DELETE MY ACCOUNT'),
+});
+
+// ========================
 // VALIDATION HELPERS
 // ========================
 

@@ -1,9 +1,10 @@
 import { RequestHandler } from 'express';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
+import { config } from '../lib/env';
 
 const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_SECRET = config.jwtSecret;
 
 export const getCurrentUser: RequestHandler = async (req, res) => {
   try {

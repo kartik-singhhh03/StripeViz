@@ -17,6 +17,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { getApiUrl } from "@/lib/api";
+import { usePaddleCheckout, type PlanType, type BillingCycle } from "@/hooks/use-paddle-checkout";
 
 interface PlanFeature {
   name: string;
@@ -76,10 +77,10 @@ const plans: Plan[] = [
     cta: "Upgrade to Pro",
   },
   {
-    name: "business",
-    displayName: "Business",
+    name: "enterprise",
+    displayName: "Enterprise",
     description: "For growing teams",
-    price: { monthly: 79, yearly: 790 },
+    price: { monthly: 99, yearly: 990 },
     features: [
       { name: "Everything in Pro", included: true },
       { name: "Slack/Discord alerts", included: true },
@@ -90,7 +91,7 @@ const plans: Plan[] = [
       { name: "Custom integrations", included: true },
       { name: "Team access (coming soon)", included: true },
     ],
-    cta: "Upgrade to Business",
+    cta: "Upgrade to Enterprise",
   },
 ];
 
@@ -116,12 +117,20 @@ export default function Pricing() {
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<string>("free");
+  
+  // Paddle checkout hook
+  const { openCheckout, isLoading: paddleLoading, isLoaded: paddleLoaded } = usePaddleCheckout();
 
   // Check for checkout status in URL
   useEffect(() => {
     const checkout = searchParams.get("checkout");
+    const success = searchParams.get("success");
     if (checkout === "canceled") {
       setError("Checkout was canceled. No charges were made.");
+    }
+    if (success === "true") {
+      // Show success message - subscription activated
+      setError(null);
     }
   }, [searchParams]);
 
@@ -132,8 +141,8 @@ export default function Pricing() {
         const res = await fetch(getApiUrl("/api/auth/me"), { credentials: "include" });
         if (res.ok) {
           setIsAuthenticated(true);
-          // Get subscription status
-          const subRes = await fetch(getApiUrl("/api/stripe/subscription"), { credentials: "include" });
+          // Get subscription status from Paddle endpoint
+          const subRes = await fetch(getApiUrl("/api/payments/subscription"), { credentials: "include" });
           if (subRes.ok) {
             const data = await subRes.json();
             setCurrentPlan(data.plan);
@@ -157,34 +166,25 @@ export default function Pricing() {
       return;
     }
 
+    // Only pro and enterprise are paid plans
+    if (plan !== "pro" && plan !== "enterprise") {
+      setError("Invalid plan selected");
+      return;
+    }
+
     setLoading(plan);
     setError(null);
 
     try {
-      const res = await fetch(getApiUrl("/api/stripe/checkout"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          plan,
-          interval: plan === "lifetime" ? "lifetime" : billingInterval,
-        }),
+      // Use Paddle checkout
+      await openCheckout({
+        plan: plan as PlanType,
+        billingCycle: billingInterval as BillingCycle,
+        successUrl: `${window.location.origin}/pricing?success=true`,
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to create checkout session");
-      }
-
-      // Redirect to Stripe Checkout
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error("No checkout URL returned");
-      }
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Failed to open checkout");
+    } finally {
       setLoading(null);
     }
   };
@@ -349,16 +349,16 @@ export default function Pricing() {
                       plan.highlighted ? "btn-primary" : "btn-secondary"
                     )}
                     onClick={() => handleUpgrade(plan.name)}
-                    disabled={loading === plan.name || currentPlan === plan.name}
+                    disabled={loading === plan.name || paddleLoading || currentPlan === plan.name}
                   >
-                    {loading === plan.name ? (
+                    {(loading === plan.name || (paddleLoading && loading === plan.name)) ? (
                       <Loader2 className="w-4 h-4 animate-spin mr-2" />
                     ) : currentPlan === plan.name ? (
                       "Current Plan"
                     ) : (
                       plan.cta
                     )}
-                    {!loading && currentPlan !== plan.name && (
+                    {!loading && !paddleLoading && currentPlan !== plan.name && (
                       <ArrowRight className="w-4 h-4 ml-2" />
                     )}
                   </Button>

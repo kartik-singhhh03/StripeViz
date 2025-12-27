@@ -19,6 +19,7 @@ import { RequestHandler } from "express";
 import { PrismaClient } from "@prisma/client";
 import Stripe from "stripe";
 import { auditLog, recordSuspiciousActivity } from "../lib/security";
+import { config, isFeatureEnabled } from "../lib/env";
 import {
   upsertSubscription,
   updateSubscriptionFromStripe,
@@ -35,7 +36,17 @@ import {
 const prisma = new PrismaClient();
 
 // Webhook secret for signature verification
-const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
+const WEBHOOK_SECRET = config.stripe.webhookSecret;
+
+// Helper to get Stripe instance
+function getStripe(): Stripe {
+  if (!isFeatureEnabled('stripe')) {
+    throw new Error("Stripe is not configured");
+  }
+  return new Stripe(config.stripe.secretKey, {
+    apiVersion: "2025-12-15.clover",
+  });
+}
 
 // Track processed events for idempotency
 const processedEvents = new Set<string>();
@@ -69,9 +80,7 @@ export const handleStripeWebhook: RequestHandler = async (req, res) => {
   let event: Stripe.Event;
 
   try {
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-      apiVersion: "2025-12-15.clover",
-    });
+    const stripe = getStripe();
 
     // CRITICAL: Use raw body for signature verification
     const rawBody = req.body;
@@ -217,9 +226,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       : session.subscription.id;
 
     // Get full subscription details from Stripe
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-      apiVersion: "2025-12-15.clover",
-    });
+    const stripe = getStripe();
     const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId) as any;
 
     // Get plan from price ID

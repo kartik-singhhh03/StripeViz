@@ -23,6 +23,7 @@ import Privacy from "./pages/Privacy";
 import Refund from "./pages/Refund";
 import Security from "./pages/Security";
 import Billing from "./pages/Billing";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import PublicSnapshot from "./pages/PublicSnapshot";
 
@@ -79,6 +80,14 @@ const App = () => (
             <Route path="/refund" element={<Refund />} />
             <Route path="/security" element={<Security />} />
             <Route path="/billing" element={<Billing />} />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <Settings />
+                </ProtectedRoute>
+              }
+            />
             {/* Public snapshot route (no auth required) */}
             <Route path="/s/:token" element={<PublicSnapshot />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

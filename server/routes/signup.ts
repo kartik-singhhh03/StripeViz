@@ -1,7 +1,8 @@
 import { RequestHandler } from "express";
 import { PrismaClient } from "@prisma/client";
-import { hashPassword, generateToken } from "../lib/auth";
+import { hashPassword, generateToken, validatePasswordStrength } from "../lib/auth";
 import { auditLog } from "../lib/security";
+import { sendWelcomeEmail } from "../lib/email";
 import type { SignupInput } from "../lib/validation";
 
 const prisma = new PrismaClient();
@@ -10,6 +11,12 @@ export const handleSignup: RequestHandler = async (req, res) => {
   try {
     // Body is already validated by middleware
     const { email, password, name } = req.body as SignupInput;
+
+    // Validate password strength
+    const passwordError = validatePasswordStrength(password);
+    if (passwordError) {
+      return res.status(400).json({ error: passwordError });
+    }
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -56,6 +63,11 @@ export const handleSignup: RequestHandler = async (req, res) => {
       userId: user.id,
       ip: req.ip,
       userAgent: req.get("User-Agent"),
+    });
+
+    // Send welcome email (non-blocking)
+    sendWelcomeEmail(user.email, user.name || '').catch((err) => {
+      console.error('[Signup] Failed to send welcome email:', err);
     });
 
     res.status(201).json({

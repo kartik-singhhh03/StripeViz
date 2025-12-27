@@ -3,7 +3,8 @@
  * 
  * Production-ready subscription system with:
  * - Plan definitions and feature gating
- * - Stripe price mapping
+ * - Paddle price mapping (primary)
+ * - Stripe price mapping (legacy)
  * - Access control utilities
  * - Middleware for route protection
  */
@@ -11,6 +12,7 @@
 import { Response, NextFunction } from "express";
 import { PrismaClient } from "@prisma/client";
 import { AuthRequest } from "./middleware";
+import { getPlanFeatures } from "./paddle";
 
 const prisma = new PrismaClient();
 
@@ -18,9 +20,9 @@ const prisma = new PrismaClient();
 // TYPE DEFINITIONS
 // ========================
 
-export type PlanType = "free" | "pro" | "business" | "lifetime";
+export type PlanType = "free" | "pro" | "enterprise" | "business" | "lifetime";
 export type BillingInterval = "monthly" | "yearly" | "lifetime";
-export type SubscriptionStatus = "active" | "canceled" | "past_due" | "trialing" | "incomplete";
+export type SubscriptionStatus = "active" | "canceled" | "past_due" | "trialing" | "paused" | "incomplete";
 
 export interface PlanFeatures {
   name: string;
@@ -104,6 +106,32 @@ export const PLANS: Record<PlanType, PlanFeatures> = {
       "API access (read-only)",
       "Faster sync frequency (5 min)",
       "Dedicated support",
+    ],
+    limits: {
+      historyDays: -1,
+      exportsPerMonth: -1,
+      apiAccess: true,
+      slackAlerts: true,
+      multiMetricExports: true,
+      prioritySupport: true,
+      fasterSync: true,
+    },
+  },
+  enterprise: {
+    name: "enterprise",
+    displayName: "Enterprise",
+    price: { monthly: 99, yearly: 990 },
+    features: [
+      "Everything in Pro",
+      "Slack/Discord alerts",
+      "Multi-metric exports",
+      "API access (read-only)",
+      "Faster sync frequency (5 min)",
+      "Dedicated support",
+      "Unlimited connections",
+      "Custom integrations",
+      "Team access",
+      "Anonymous benchmarking",
     ],
     limits: {
       historyDays: -1,
@@ -263,7 +291,7 @@ export async function hasFeatureAccess(
 }
 
 /**
- * Check if user can access Pro features (Pro, Business, or Lifetime)
+ * Check if user can access Pro features (Pro, Business, Enterprise, or Lifetime)
  */
 export async function hasProAccess(userId: string): Promise<boolean> {
   const { plan, isActive, isLifetime } = await getUserSubscription(userId);
@@ -271,18 +299,29 @@ export async function hasProAccess(userId: string): Promise<boolean> {
   if (!isActive) return false;
   if (isLifetime) return true;
   
-  return plan === "pro" || plan === "business";
+  return plan === "pro" || plan === "business" || plan === "enterprise";
 }
 
 /**
- * Check if user can access Business features
+ * Check if user can access Business/Enterprise features
  */
 export async function hasBusinessAccess(userId: string): Promise<boolean> {
   const { plan, isActive } = await getUserSubscription(userId);
   
   if (!isActive) return false;
   
-  return plan === "business";
+  return plan === "business" || plan === "enterprise";
+}
+
+/**
+ * Check if user can access Enterprise features
+ */
+export async function hasEnterpriseAccess(userId: string): Promise<boolean> {
+  const { plan, isActive } = await getUserSubscription(userId);
+  
+  if (!isActive) return false;
+  
+  return plan === "enterprise";
 }
 
 // ========================
@@ -522,6 +561,37 @@ export const requireBusinessPlan = async (
     next();
   } catch (error) {
     console.error("Business plan check error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+/**
+ * Middleware to require Enterprise plan
+ */
+export const requireEnterprisePlan = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.userId) {
+      res.status(401).json({ error: "Not authenticated" });
+      return;
+    }
+
+    const hasAccess = await hasEnterpriseAccess(req.userId);
+
+    if (!hasAccess) {
+      res.status(403).json({ 
+        error: "Enterprise plan required",
+        upgrade: true,
+      });
+      return;
+    }
+
+    next();
+  } catch (error) {
+    console.error("Enterprise plan check error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
