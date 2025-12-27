@@ -126,6 +126,46 @@ import {
 
 export function createServer() {
   const app = express();
+  // ========================
+  // CORS (MUST BE FIRST MIDDLEWARE)
+  // ========================
+  const allowedOrigins = [
+    config.frontendUrl,            
+    "https://api.stripeviz.kartikdev.me",
+    "http://localhost:8080",
+    "http://localhost:8081",
+    "http://localhost:5173",
+  ].filter(Boolean);
+
+  const corsMiddleware = cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      // ❌ NEVER block preflight
+      return callback(null, true);
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-CSRF-Token",
+      "X-Request-ID",
+    ],
+    exposedHeaders: [
+      "X-RateLimit-Limit",
+      "X-RateLimit-Remaining",
+      "X-RateLimit-Reset",
+    ],
+    maxAge: 86400,
+  });
+
+  app.use(corsMiddleware);
+  app.options("*", corsMiddleware);
 
   // ========================
   // SECURITY: First layer - IP blocking & request tracking
@@ -176,47 +216,14 @@ export function createServer() {
     })
   );
 
-  // ========================
-  // CORS configuration - Strict origin control
-  // ========================
-  const allowedOrigins = [
-    config.frontendUrl,
-    "http://localhost:8080",
-    "http://localhost:8081",
-    "http://localhost:5173",
-  ].filter(Boolean);
-
-  app.use(
-    cors({
-      origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps or curl)
-        if (!origin) return callback(null, true);
-        
-        // In development, allow localhost on any port
-        if (config.isDevelopment && origin?.startsWith("http://localhost:")) {
-          return callback(null, true);
-        }
-        
-        if (allowedOrigins.includes(origin)) {
-          callback(null, true);
-        } else {
-          callback(new Error("Not allowed by CORS"));
-        }
-      },
-      credentials: true,
-      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization", "X-CSRF-Token", "X-Request-ID"],
-      exposedHeaders: ["X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"],
-      maxAge: 86400, // 24 hours
-    })
-  );
+  
 
   // ========================
   // Body parsing & sanitization
   // ========================
   app.use(express.json({ limit: "10kb" })); // Limit body size
   app.use(express.urlencoded({ extended: true, limit: "10kb" }));
-  app.use(sanitizeInput); // Sanitize all inputs
+  app.use(sanitizeInput); // Sanitze all inputs
 
   // ========================
   // Global API rate limiter
