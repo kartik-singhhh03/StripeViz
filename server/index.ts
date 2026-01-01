@@ -165,7 +165,8 @@ export function createServer() {
   });
 
   app.use(corsMiddleware);
-  app.options("*", corsMiddleware);
+  // Note: app.options("*") removed - causes path-to-regexp v8 crash
+  // CORS middleware already handles OPTIONS via app.use()
 
   // ========================
   // SECURITY: First layer - IP blocking & request tracking
