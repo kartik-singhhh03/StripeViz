@@ -9,6 +9,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useToast } from './use-toast';
+import { getApiUrl } from '@/lib/api';
 
 // Paddle.js types
 declare global {
@@ -184,10 +185,12 @@ export function usePaddleCheckout(): UsePaddleCheckoutReturn {
 
     try {
       // Create checkout transaction via backend
-      const response = await fetch('/api/payments/create-checkout', {
+      const token = localStorage.getItem('token');
+      const response = await fetch(getApiUrl('/api/payments/create-checkout'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
         credentials: 'include',
         body: JSON.stringify({
