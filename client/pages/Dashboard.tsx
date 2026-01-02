@@ -2554,7 +2554,7 @@ export default function Dashboard() {
                       Perfect for accountants and financial reporting.
                     </p>
                   </div>
-                  <Link to="/upgrade" className="w-full sm:w-auto">
+                  <Link to="/billing" className="w-full sm:w-auto">
                     <Button className="btn-primary w-full sm:w-auto">
                       Upgrade to Pro
                       <ArrowUpRight className="w-4 h-4 ml-2" />
