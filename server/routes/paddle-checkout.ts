@@ -121,7 +121,7 @@ router.post('/create-checkout', authMiddleware, async (req: AuthRequest, res: Re
       priceId,
       customerEmail: user.email,
       customerName: user.name || undefined,
-      successUrl: successUrl || `${process.env.APP_URL || 'http://localhost:8080'}/billing?success=true`,
+      successUrl: successUrl || `${process.env.FRONTEND_URL || process.env.APP_URL || 'http://localhost:8080'}/billing?success=true`,
       passthrough: {
         userId: user.id,
         plan,

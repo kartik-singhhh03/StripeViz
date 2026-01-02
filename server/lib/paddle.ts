@@ -152,7 +152,7 @@ export async function createCheckout(options: CheckoutOptions): Promise<PaddleTr
   // Add success URL for redirect after checkout
   if (successUrl) {
     body.checkout = {
-      url: successUrl,
+      success_url: successUrl,
     };
   }
 
