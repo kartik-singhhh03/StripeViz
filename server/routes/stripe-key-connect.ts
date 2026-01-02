@@ -4,6 +4,7 @@ import { AuthRequest } from "../lib/middleware";
 import { auditLog } from "../lib/security";
 import type { ConnectStripeInput } from "../lib/validation";
 import Stripe from "stripe";
+import { isTestKey, getStripeMode, getKeyTypeDescription } from "../lib/stripe-utils";
 
 const prisma = new PrismaClient();
 
@@ -19,12 +20,15 @@ export const connectStripeWithKey: RequestHandler = async (
     // Body is already validated by middleware
     const { apiKey } = req.body as ConnectStripeInput;
 
-    // Additional security: only allow test keys in development
-    if (process.env.NODE_ENV === "production" && apiKey.startsWith("sk_test_")) {
-      return res.status(400).json({ 
-        error: "Test keys not allowed in production. Please use a live Stripe key." 
-      });
-    }
+    // Detect key type (test or live)
+    const stripeMode = getStripeMode(apiKey);
+    const isTestMode = isTestKey(apiKey);
+
+    // Log key type detection (NEVER log the actual key)
+    console.log(`[Stripe Connect] User ${req.userId} connecting with ${getKeyTypeDescription(apiKey)}`);
+
+    // NOTE: Test keys are now allowed in production for testing purposes
+    // Users will see a warning in the UI when using test keys
 
     // Validate the API key by making a test request
     const testStripe = new Stripe(apiKey, {
@@ -34,7 +38,7 @@ export const connectStripeWithKey: RequestHandler = async (
     try {
       const account = await testStripe.accounts.retrieve("self");
 
-      // Save the connection to database
+      // Save the connection to database with stripe mode
       // NOTE: In production, encrypt the access token before storing
       await prisma.stripeConnection.upsert({
         where: { userId: req.userId },
@@ -42,10 +46,12 @@ export const connectStripeWithKey: RequestHandler = async (
           userId: req.userId,
           stripeAccountId: account.id,
           accessToken: apiKey, // Consider encrypting this
+          stripeMode: stripeMode, // Store key type: "test" or "live"
         },
         update: {
           stripeAccountId: account.id,
           accessToken: apiKey,
+          stripeMode: stripeMode, // Update key type on reconnect
         },
       });
 
@@ -55,13 +61,16 @@ export const connectStripeWithKey: RequestHandler = async (
         ip: req.ip,
         details: {
           stripeAccountId: account.id,
-          // Don't log the actual API key
+          stripeMode: stripeMode, // Log mode, NOT the key
+          isTestMode: isTestMode,
         },
       });
 
       res.json({ 
         success: true, 
         accountId: account.id,
+        stripeMode: stripeMode, // Return mode to client
+        isTestMode: isTestMode,
         // Don't echo back the API key
       });
     } catch (stripeError: any) {
@@ -71,6 +80,7 @@ export const connectStripeWithKey: RequestHandler = async (
         ip: req.ip,
         details: {
           error: stripeError.type || "unknown",
+          attemptedMode: stripeMode, // Log attempted mode
         },
       });
       

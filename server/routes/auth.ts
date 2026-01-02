@@ -25,6 +25,7 @@ export const getCurrentUser: RequestHandler = async (req, res) => {
         stripeConnection: {
           select: {
             stripeAccountId: true,
+            stripeMode: true, // Include stripeMode (test/live) in response
             createdAt: true,
           },
         },

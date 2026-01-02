@@ -129,24 +129,42 @@ export function createServer() {
   // ========================
   // CORS (MUST BE FIRST MIDDLEWARE)
   // ========================
+  // Production allowed origins - SECURITY: Only allow known frontend domains
   const allowedOrigins = [
-    config.frontendUrl,            
+    // Primary production domain
+    "https://stripeviz.kartikdev.me",
+    // Legacy Vercel URL (fallback for staging/testing)
+    "https://stripe-viz-app.vercel.app",
+    // Backend API domain (for internal calls)
     "https://api.stripeviz.kartikdev.me",
-    "http://localhost:8080",
-    "http://localhost:8081",
-    "http://localhost:5173",
+    // Environment-configured frontend URL
+    config.frontendUrl,
+    // Development origins (only active in development)
+    ...(config.isDevelopment ? [
+      "http://localhost:8080",
+      "http://localhost:8081",
+      "http://localhost:5173",
+    ] : []),
   ].filter(Boolean);
 
   const corsMiddleware = cors({
     origin: (origin, callback) => {
+      // Allow requests with no origin (server-to-server, Postman, etc.)
       if (!origin) return callback(null, true);
 
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
 
-      // ❌ NEVER block preflight
-      return callback(null, true);
+      // In development, allow all origins for easier testing
+      if (config.isDevelopment) {
+        console.warn(`[CORS] Allowing origin in development: ${origin}`);
+        return callback(null, true);
+      }
+
+      // Production: Log blocked origin attempts for security monitoring
+      console.warn(`[CORS] Blocked origin: ${origin}`);
+      return callback(new Error('Not allowed by CORS'), false);
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],

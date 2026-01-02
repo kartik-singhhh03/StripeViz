@@ -22,6 +22,8 @@ import {
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { getApiUrl } from '@/lib/api';
+import { TestModeWarning, TestModeBadge, TestModeRestrictionBanner } from '@/components/TestModeWarning';
+import { trackDashboardLoad, trackStripeConnectSuccess } from '@/lib/analytics';
 import type { 
   Insight, WeeklySummary, HealthIndicator, DataFreshness, HealthStatus,
   ZScoreAnomaly, TimelineEvent, CohortRetentionMatrix, CohortData,
@@ -36,6 +38,7 @@ interface User {
   name: string;
   stripeConnection?: {
     stripeAccountId: string;
+    stripeMode?: 'test' | 'live'; // Indicates if using test or live Stripe keys
     createdAt: string;
   };
   subscription?: {
@@ -143,6 +146,9 @@ export default function Dashboard() {
 
       const data = await response.json();
       setMetrics(data);
+      
+      // Track dashboard load (GA4) - only in production
+      trackDashboardLoad();
     } catch (error) {
       toast.error('Failed to load metrics from Stripe');
     } finally {
@@ -173,6 +179,12 @@ export default function Dashboard() {
         const data = await response.json();
         throw new Error(data.error || 'Failed to connect Stripe');
       }
+
+      const data = await response.json();
+      
+      // Track Stripe connect success (GA4) - only tracks mode, not the key
+      const stripeMode = data.stripeMode || (apiKey.startsWith('sk_test_') ? 'test' : 'live');
+      trackStripeConnectSuccess(stripeMode);
 
       toast.success('Stripe account connected successfully!');
       setShowApiKeyModal(false);
@@ -1987,6 +1999,8 @@ export default function Dashboard() {
             <p className="text-sm sm:text-base text-[var(--text-secondary)]">Understand your business in 60 seconds.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+            {/* Test Mode Badge - shown when using Stripe test keys */}
+            <TestModeBadge isTestMode={user?.stripeConnection?.stripeMode === 'test'} />
             {/* Health Badge */}
             {metrics?.healthIndicator && (
               <HealthBadge health={metrics.healthIndicator} />
@@ -2494,6 +2508,11 @@ export default function Dashboard() {
               <p className="text-sm text-[var(--text-muted)] ml-13">
                 Simulate scenarios, monitor alerts, and benchmark your performance
               </p>
+              {/* Test Mode Restriction Banner for Advanced Analytics */}
+              <TestModeRestrictionBanner 
+                isTestMode={user?.stripeConnection?.stripeMode === 'test'} 
+                feature="Advanced analytics"
+              />
             </div>
 
             {/* Smart Alerts - Always visible if there are alerts */}
@@ -2547,6 +2566,9 @@ export default function Dashboard() {
           </>
         )}
       </main>
+
+      {/* Test Mode Warning Toast - shows once per session when using test keys */}
+      <TestModeWarning isTestMode={user?.stripeConnection?.stripeMode === 'test'} />
     </div>
   );
 }
