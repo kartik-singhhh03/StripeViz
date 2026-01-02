@@ -16,6 +16,15 @@ A beautiful, production-ready SaaS dashboard for viewing your Stripe metrics. Se
 - **💳 Subscription Billing** — Free, Pro, and Business tiers via Paddle
 - **🌙 Dark Mode** — Beautiful dark-first design
 - **📱 Responsive** — Works on desktop, tablet, and mobile
+  SCREENSHOTS:
+  <img width="1897" height="873" alt="Screenshot 2026-01-02 165516" src="https://github.com/user-attachments/assets/05f943a6-678d-49ab-8f8a-8f7e811c4f51" />
+  <img width="1891" height="863" alt="Screenshot 2026-01-02 165608" src="https://github.com/user-attachments/assets/33ff6785-8c06-4944-b910-eb813b47bd30" />
+  <img width="1894" height="863" alt="Screenshot 2026-01-02 165733" src="https://github.com/user-attachments/assets/9d7c916f-53c3-411b-8fe7-b75c77968dde" />
+  <img width="1901" height="872" alt="Screenshot 2026-01-02 165749" src="https://github.com/user-attachments/assets/091b09b2-3de4-4b6c-a809-e2b4497c47da" />
+
+
+
+
 
 ## 🛠️ Tech Stack
 
