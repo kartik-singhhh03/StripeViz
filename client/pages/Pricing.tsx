@@ -138,11 +138,27 @@ export default function Pricing() {
   useEffect(() => {
     async function checkAuth() {
       try {
-        const res = await fetch(getApiUrl("/api/auth/me"), { credentials: "include" });
+        const token = localStorage.getItem("token");
+        if (!token) {
+          setIsAuthenticated(false);
+          return;
+        }
+        
+        const res = await fetch(getApiUrl("/api/auth/me"), { 
+          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         if (res.ok) {
           setIsAuthenticated(true);
           // Get subscription status from Paddle endpoint
-          const subRes = await fetch(getApiUrl("/api/payments/subscription"), { credentials: "include" });
+          const subRes = await fetch(getApiUrl("/api/payments/subscription"), { 
+            credentials: "include",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
           if (subRes.ok) {
             const data = await subRes.json();
             setCurrentPlan(data.plan);
