@@ -26,6 +26,14 @@ sudo nano /etc/nginx/sites-available/stripeviz
 # Rate limiting zone (optional - recommended for production)
 limit_req_zone $binary_remote_addr zone=api_limit:10m rate=10r/s;
 
+# CORS origin mapping - supports multiple origins
+map $http_origin $cors_origin {
+    default "";
+    "https://stripeviz.kartikdev.me" $http_origin;
+    "https://stripe-viz-app.vercel.app" $http_origin;
+    "https://api.stripeviz.kartikdev.me" $http_origin;
+}
+
 server {
     listen 80;
     server_name api.stripeviz.kartikdev.me stripeviz.kartikdev.me;
@@ -60,6 +68,25 @@ server {
     
     # Proxy configuration
     location / {
+        # ============== CORS PREFLIGHT HANDLING ==============
+        # Handle OPTIONS requests at nginx level for CORS preflight
+        if ($request_method = 'OPTIONS') {
+            add_header 'Access-Control-Allow-Origin' $cors_origin always;
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+            add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization, X-CSRF-Token, X-Request-ID' always;
+            add_header 'Access-Control-Allow-Credentials' 'true' always;
+            add_header 'Access-Control-Max-Age' 86400 always;
+            add_header 'Content-Type' 'text/plain charset=UTF-8';
+            add_header 'Content-Length' 0;
+            return 204;
+        }
+        
+        # Add CORS headers to all responses
+        add_header 'Access-Control-Allow-Origin' $cors_origin always;
+        add_header 'Access-Control-Allow-Credentials' 'true' always;
+        add_header 'Access-Control-Expose-Headers' 'X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset' always;
+        # ============== END CORS HANDLING ==============
+        
         # Rate limiting (optional)
         limit_req zone=api_limit burst=20 nodelay;
         
@@ -92,6 +119,19 @@ server {
     
     # Health check endpoint (bypasses rate limiting)
     location /api/ping {
+        # Handle CORS preflight
+        if ($request_method = 'OPTIONS') {
+            add_header 'Access-Control-Allow-Origin' $cors_origin always;
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+            add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization' always;
+            add_header 'Access-Control-Allow-Credentials' 'true' always;
+            add_header 'Access-Control-Max-Age' 86400 always;
+            return 204;
+        }
+        
+        add_header 'Access-Control-Allow-Origin' $cors_origin always;
+        add_header 'Access-Control-Allow-Credentials' 'true' always;
+        
         proxy_pass http://127.0.0.1:8080;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -199,6 +239,38 @@ GITHUB_REDIRECT_URI=https://api.stripeviz.kartikdev.me/api/auth/github/callback
 
 ## Troubleshooting
 
+### CORS Issues (IMPORTANT!)
+If you see CORS errors like "Response to preflight request doesn't pass access control check", you need to update nginx with the CORS configuration above and reload:
+
+```bash
+# 1. Edit nginx config
+sudo nano /etc/nginx/sites-available/stripeviz
+
+# 2. Copy the updated configuration from this file (includes CORS handling)
+
+# 3. Test configuration
+sudo nginx -t
+
+# 4. Reload nginx
+sudo systemctl reload nginx
+```
+
+**Quick CORS Fix** - Run these commands on your EC2 server to apply the CORS configuration immediately:
+
+```bash
+# SSH into your EC2 instance, then:
+cd /etc/nginx/sites-available
+
+# Backup current config
+sudo cp stripeviz stripeviz.backup
+
+# Edit and paste the new config from this file
+sudo nano stripeviz
+
+# Test and reload
+sudo nginx -t && sudo systemctl reload nginx
+```
+
 ### Check Nginx logs
 ```bash
 sudo tail -f /var/log/nginx/stripeviz.error.log
@@ -221,19 +293,26 @@ sudo certbot renew --force-renewal
 
 ### Common issues
 
-1. **502 Bad Gateway**: Node.js app not running on port 8080
+1. **CORS Error (Access-Control-Allow-Origin)**: Nginx not configured to handle preflight OPTIONS requests
+   ```bash
+   # Update nginx config with CORS handling (see configuration above)
+   sudo nano /etc/nginx/sites-available/stripeviz
+   sudo nginx -t && sudo systemctl reload nginx
+   ```
+
+2. **502 Bad Gateway**: Node.js app not running on port 8080
    ```bash
    pm2 status
    pm2 restart stripeviz
    ```
 
-2. **Connection refused**: Firewall blocking port 443
+3. **Connection refused**: Firewall blocking port 443
    ```bash
    sudo ufw allow 443
    sudo ufw allow 80
    ```
 
-3. **SSL certificate issues**: Certbot not configured properly
+4. **SSL certificate issues**: Certbot not configured properly
    ```bash
    sudo certbot --nginx -d api.stripeviz.kartikdev.me
    ```

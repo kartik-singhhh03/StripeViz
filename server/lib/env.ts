@@ -42,13 +42,10 @@ const envSchema = z.object({
     ),
 
   // ===== PADDLE CONFIGURATION (REQUIRED for payments) =====
+  // Paddle API keys can have various formats: apikey_, test_, pdl_apikey_, live_, etc.
   PADDLE_API_KEY: z
     .string()
-    .min(1, 'PADDLE_API_KEY is required for payment processing')
-    .refine(
-      (val) => val.startsWith('apikey_') || val.startsWith('test_'),
-      'PADDLE_API_KEY must be a valid Paddle API key'
-    ),
+    .min(1, 'PADDLE_API_KEY is required for payment processing'),
   PADDLE_WEBHOOK_SECRET: z
     .string()
     .min(1, 'PADDLE_WEBHOOK_SECRET is required for secure webhook verification'),
@@ -85,7 +82,8 @@ const envSchema = z.object({
 
   // ===== EMAIL CONFIGURATION (OPTIONAL - will be added) =====
   RESEND_API_KEY: z.string().optional(),
-  EMAIL_FROM: z.string().email().optional().default('noreply@example.com'),
+  // EMAIL_FROM can be "email@example.com" or "Name <email@example.com>" format
+  EMAIL_FROM: z.string().optional().default('noreply@example.com'),
 
   // ===== APPLICATION URLS =====
   APP_URL: z.string().url().optional().default('http://localhost:8080'),
