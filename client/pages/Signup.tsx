@@ -4,6 +4,7 @@ import { Loader2, Mail, Lock, Eye, EyeOff, User, Check } from "lucide-react";
 import { DarkLayout } from "@/components/DarkLayout";
 import { toast } from "sonner";
 import { getApiUrl } from "@/lib/api";
+import { trackSignupSuccess } from "@/lib/analytics";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -71,6 +72,10 @@ export default function Signup() {
       }
 
       localStorage.setItem("token", data.token);
+      
+      // Track successful signup (GA4)
+      trackSignupSuccess('email');
+      
       toast.success("Account created successfully!");
       navigate("/dashboard");
     } catch (error: any) {

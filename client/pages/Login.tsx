@@ -4,6 +4,7 @@ import { Activity, Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { DarkLayout } from "@/components/DarkLayout";
 import { toast } from "sonner";
 import { getApiUrl } from "@/lib/api";
+import { trackLoginSuccess } from "@/lib/analytics";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -59,6 +60,10 @@ export default function Login() {
       }
 
       localStorage.setItem("token", data.token);
+      
+      // Track successful login (GA4)
+      trackLoginSuccess('email');
+      
       toast.success("Welcome back!");
       navigate("/dashboard");
     } catch (error: any) {

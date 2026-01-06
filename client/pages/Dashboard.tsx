@@ -23,7 +23,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { getApiUrl } from '@/lib/api';
 import { TestModeWarning, TestModeBadge, TestModeRestrictionBanner } from '@/components/TestModeWarning';
-import { trackDashboardLoad, trackStripeConnectSuccess } from '@/lib/analytics';
+import { trackDashboardLoad, trackStripeConnectSuccess, trackDashboardView } from '@/lib/analytics';
 import type { 
   Insight, WeeklySummary, HealthIndicator, DataFreshness, HealthStatus,
   ZScoreAnomaly, TimelineEvent, CohortRetentionMatrix, CohortData,

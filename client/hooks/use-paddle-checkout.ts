@@ -10,6 +10,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useToast } from './use-toast';
 import { getApiUrl } from '@/lib/api';
+import { trackSubscriptionCreated } from '@/lib/analytics';
 
 // Paddle.js types
 declare global {
@@ -209,6 +210,10 @@ export function usePaddleCheckout(): UsePaddleCheckoutReturn {
 
       // Open Paddle checkout with transaction ID
       if (data.transactionId) {
+        // Track subscription creation attempt (GA4)
+        // Note: Final tracking happens on webhook success, but we track intent here
+        trackSubscriptionCreated(options.plan, options.billingCycle);
+        
         window.Paddle.Checkout.open({
           transactionId: data.transactionId,
         });

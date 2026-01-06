@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { DarkLayout } from "@/components/DarkLayout";
+import { trackLoginSuccess, trackSignupSuccess } from "@/lib/analytics";
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -45,6 +46,17 @@ export default function AuthCallback() {
 
       localStorage.setItem("token", token);
       setStatus("success");
+      
+      // Track OAuth login/signup success (GA4)
+      // Determine provider from URL path or use generic 'oauth'
+      const provider = searchParams.get("provider") as 'google' | 'github' || 'google';
+      const isNewUser = searchParams.get("new_user") === "true";
+      
+      if (isNewUser) {
+        trackSignupSuccess(provider);
+      } else {
+        trackLoginSuccess(provider);
+      }
 
       setTimeout(() => {
         navigate("/dashboard");

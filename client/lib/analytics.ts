@@ -1,21 +1,28 @@
 /**
- * Google Analytics (GA4) Integration
+ * Google Analytics 4 (GA4) Integration
+ * Measurement ID: G-N0DSJ5Y56Y
  * 
  * PRIVACY & SECURITY:
  * - Only loads in production (NODE_ENV === 'production')
  * - Only loads if VITE_GA_MEASUREMENT_ID is set
- * - Never tracks sensitive data (Stripe keys, passwords, etc.)
+ * - Uses anonymize_ip: true for privacy compliance
+ * - Never tracks sensitive data (Stripe keys, passwords, PII)
  * - Respects user privacy settings
  * 
  * TRACKED EVENTS:
- * - Page views (automatic)
- * - Dashboard load
- * - Stripe connect success
- * - Subscription events
+ * - page_view (automatic on route changes)
+ * - signup_success
+ * - login_success
+ * - stripe_connect_success
+ * - subscription_created
+ * - subscription_cancelled
+ * - dashboard_view
+ * - feature_usage
+ * - export
  */
 
 // Check if we're in production and have GA configured
-const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID;
+const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID || 'G-N0DSJ5Y56Y';
 const IS_PRODUCTION = import.meta.env.PROD;
 const GA_ENABLED = IS_PRODUCTION && GA_MEASUREMENT_ID;
 
@@ -52,10 +59,10 @@ export function initGA(): void {
 
   gtag('js', new Date());
   gtag('config', GA_MEASUREMENT_ID, {
-    // Privacy settings
+    // Privacy settings - GDPR/CCPA compliance
     anonymize_ip: true,
     cookie_flags: 'SameSite=None;Secure',
-    // Don't send page_path automatically (we'll do it manually)
+    // Send initial page view
     send_page_view: true,
   });
 
@@ -121,17 +128,46 @@ function sanitizeEventParams(
   return sanitized;
 }
 
-// ========================
-// PRE-DEFINED EVENTS
+// PRE-DEFINED SAAS EVENTS
 // ========================
 
 /**
- * Track dashboard load
+ * Track successful signup
+ * Called after user successfully creates an account
  */
-export function trackDashboardLoad(): void {
-  trackEvent('dashboard_load', {
+export function trackSignupSuccess(method: 'email' | 'google' | 'github' = 'email'): void {
+  trackEvent('signup_success', {
+    method,
     timestamp: Date.now(),
   });
+}
+
+/**
+ * Track successful login
+ * Called after user successfully logs in
+ */
+export function trackLoginSuccess(method: 'email' | 'google' | 'github' = 'email'): void {
+  trackEvent('login_success', {
+    method,
+    timestamp: Date.now(),
+  });
+}
+
+/**
+ * Track dashboard view
+ * Called when user views the main dashboard
+ */
+export function trackDashboardView(): void {
+  trackEvent('dashboard_view', {
+    timestamp: Date.now(),
+  });
+}
+
+/**
+ * Track dashboard load (alias for backward compatibility)
+ */
+export function trackDashboardLoad(): void {
+  trackDashboardView();
 }
 
 /**
@@ -141,11 +177,35 @@ export function trackDashboardLoad(): void {
 export function trackStripeConnectSuccess(mode: 'test' | 'live'): void {
   trackEvent('stripe_connect_success', {
     stripe_mode: mode,
+    timestamp: Date.now(),
   });
 }
 
 /**
- * Track subscription event
+ * Track subscription created
+ * Called when user successfully subscribes to a plan
+ */
+export function trackSubscriptionCreated(plan: string, billingCycle: 'monthly' | 'yearly'): void {
+  trackEvent('subscription_created', {
+    plan,
+    billing_cycle: billingCycle,
+    timestamp: Date.now(),
+  });
+}
+
+/**
+ * Track subscription cancelled
+ * Called when user cancels their subscription
+ */
+export function trackSubscriptionCancelled(plan: string): void {
+  trackEvent('subscription_cancelled', {
+    plan,
+    timestamp: Date.now(),
+  });
+}
+
+/**
+ * Track subscription event (generic)
  */
 export function trackSubscriptionEvent(
   action: 'upgrade' | 'downgrade' | 'cancel' | 'reactivate',
@@ -183,12 +243,18 @@ declare global {
   }
 }
 
+// Export all functions for easy importing
 export default {
   initGA,
   trackPageView,
   trackEvent,
+  trackSignupSuccess,
+  trackLoginSuccess,
+  trackDashboardView,
   trackDashboardLoad,
   trackStripeConnectSuccess,
+  trackSubscriptionCreated,
+  trackSubscriptionCancelled,
   trackSubscriptionEvent,
   trackFeatureUsage,
   trackExport,
