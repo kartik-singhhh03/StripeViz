@@ -235,11 +235,36 @@ FRONTEND_URL=https://stripeviz.kartikdev.me
 # OAuth Redirect URIs (production)
 GOOGLE_REDIRECT_URI=https://api.stripeviz.kartikdev.me/api/auth/google/callback
 GITHUB_REDIRECT_URI=https://api.stripeviz.kartikdev.me/api/auth/github/callback
+
+# CRITICAL: When running behind Nginx that handles CORS, set this to true
+# This prevents duplicate CORS headers which cause browser errors
+BEHIND_REVERSE_PROXY=true
 ```
 
 ## Troubleshooting
 
 ### CORS Issues (IMPORTANT!)
+
+**CRITICAL: Duplicate CORS Headers Error**
+
+If you see errors like:
+- "Access-Control-Allow-Origin header contains multiple values"
+- "net::ERR_FAILED" with 200 OK status
+
+This means BOTH Nginx AND Express are setting CORS headers. **Fix:**
+
+1. Add this to your `.env` on EC2:
+   ```env
+   BEHIND_REVERSE_PROXY=true
+   ```
+
+2. Restart the Node.js app:
+   ```bash
+   pm2 restart stripeviz
+   ```
+
+This tells Express to skip CORS handling since Nginx handles it.
+
 If you see CORS errors like "Response to preflight request doesn't pass access control check", you need to update nginx with the CORS configuration above and reload:
 
 ```bash

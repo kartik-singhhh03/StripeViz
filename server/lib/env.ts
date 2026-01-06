@@ -92,6 +92,11 @@ const envSchema = z.object({
   // ===== MISCELLANEOUS =====
   PING_MESSAGE: z.string().optional().default('pong'),
   PORT: z.string().transform(Number).pipe(z.number().positive()).optional(),
+  
+  // ===== REVERSE PROXY CONFIGURATION =====
+  // Set to 'true' when running behind Nginx that handles CORS headers
+  // This prevents duplicate CORS headers which cause browser errors
+  BEHIND_REVERSE_PROXY: z.string().optional().transform(val => val === 'true'),
 });
 
 // ============================================
@@ -228,6 +233,9 @@ export const config = {
   // Misc
   pingMessage: env.PING_MESSAGE,
   port: env.PORT || 8080,
+  
+  // Reverse proxy - when true, Express skips CORS headers (Nginx handles them)
+  behindReverseProxy: env.BEHIND_REVERSE_PROXY || false,
 } as const;
 
 // ============================================

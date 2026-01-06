@@ -129,60 +129,67 @@ export function createServer() {
   // ========================
   // CORS (MUST BE FIRST MIDDLEWARE)
   // ========================
-  // Production allowed origins - SECURITY: Only allow known frontend domains
-  const allowedOrigins = [
-    // Primary production domain
-    "https://stripeviz.kartikdev.me",
-    // Legacy Vercel URL (fallback for staging/testing)
-    "https://stripe-viz-app.vercel.app",
-    // Backend API domain (for internal calls)
-    "https://api.stripeviz.kartikdev.me",
-    // Environment-configured frontend URL
-    config.frontendUrl,
-    // Development origins (only active in development)
-    ...(config.isDevelopment ? [
-      "http://localhost:8080",
-      "http://localhost:8081",
-      "http://localhost:5173",
-    ] : []),
-  ].filter(Boolean);
+  // Skip Express CORS if behind reverse proxy (Nginx handles it)
+  // This prevents duplicate CORS headers which cause browser errors
+  if (config.behindReverseProxy) {
+    console.log('🔄 CORS: Handled by reverse proxy (Nginx), Express CORS disabled');
+  } else {
+    // Production allowed origins - SECURITY: Only allow known frontend domains
+    const allowedOrigins = [
+      // Primary production domain
+      "https://stripeviz.kartikdev.me",
+      // Legacy Vercel URL (fallback for staging/testing)
+      "https://stripe-viz-app.vercel.app",
+      // Backend API domain (for internal calls)
+      "https://api.stripeviz.kartikdev.me",
+      // Environment-configured frontend URL
+      config.frontendUrl,
+      // Development origins (only active in development)
+      ...(config.isDevelopment ? [
+        "http://localhost:8080",
+        "http://localhost:8081",
+        "http://localhost:5173",
+      ] : []),
+    ].filter(Boolean);
 
-  const corsMiddleware = cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (server-to-server, Postman, etc.)
-      if (!origin) return callback(null, true);
+    const corsMiddleware = cors({
+      origin: (origin, callback) => {
+        // Allow requests with no origin (server-to-server, Postman, etc.)
+        if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
+        if (allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
 
-      // In development, allow all origins for easier testing
-      if (config.isDevelopment) {
-        console.warn(`[CORS] Allowing origin in development: ${origin}`);
-        return callback(null, true);
-      }
+        // In development, allow all origins for easier testing
+        if (config.isDevelopment) {
+          console.warn(`[CORS] Allowing origin in development: ${origin}`);
+          return callback(null, true);
+        }
 
-      // Production: Log blocked origin attempts for security monitoring
-      console.warn(`[CORS] Blocked origin: ${origin}`);
-      return callback(new Error('Not allowed by CORS'), false);
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-      "X-CSRF-Token",
-      "X-Request-ID",
-    ],
-    exposedHeaders: [
-      "X-RateLimit-Limit",
-      "X-RateLimit-Remaining",
-      "X-RateLimit-Reset",
-    ],
-    maxAge: 86400,
-  });
+        // Production: Log blocked origin attempts for security monitoring
+        console.warn(`[CORS] Blocked origin: ${origin}`);
+        return callback(new Error('Not allowed by CORS'), false);
+      },
+      credentials: true,
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowedHeaders: [
+        "Content-Type",
+        "Authorization",
+        "X-CSRF-Token",
+        "X-Request-ID",
+      ],
+      exposedHeaders: [
+        "X-RateLimit-Limit",
+        "X-RateLimit-Remaining",
+        "X-RateLimit-Reset",
+      ],
+      maxAge: 86400,
+    });
 
-  app.use(corsMiddleware);
+    app.use(corsMiddleware);
+    console.log('🔄 CORS: Handled by Express');
+  }
   // Note: app.options("*") removed - causes path-to-regexp v8 crash
   // CORS middleware already handles OPTIONS via app.use()
 
