@@ -212,7 +212,7 @@ export const securityHeaders: RequestHandler = (_req: Request, res: Response, ne
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: https: blob:",
-      "connect-src 'self' https://api.stripe.com https://accounts.google.com https://github.com https://api.paddle.com https://sandbox-api.paddle.com https://checkout.paddle.com https://sandbox-checkout.paddle.com",
+      "connect-src 'self' https://api.stripe.com https://accounts.google.com https://github.com https://api.paddle.com https://sandbox-api.paddle.com https://checkout.paddle.com https://sandbox-checkout.paddle.com https://waitly-sigma.vercel.app",
       "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://checkout.paddle.com https://sandbox-checkout.paddle.com",
       "object-src 'none'",
       "base-uri 'self'",

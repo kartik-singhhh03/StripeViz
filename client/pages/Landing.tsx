@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { 
   ArrowRight, 
@@ -19,6 +20,60 @@ import {
   Twitter
 } from "lucide-react";
 import { DarkLayout } from "@/components/DarkLayout";
+
+// ✅ SECURE: Uses projectId only, no API keys exposed
+function WaitlistForm() {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<{ loading: boolean; message: string }>({ loading: false, message: '' });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus({ loading: true, message: '' });
+    
+    try {
+      const res = await fetch('https://waitly-sigma.vercel.app/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: 'stripeviz-new',
+          email: email
+        })
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        setStatus({ loading: false, message: `You're #${data.position} on the waitlist!` });
+        setEmail('');
+      } else {
+        setStatus({ loading: false, message: data.error });
+      }
+    } catch {
+      setStatus({ loading: false, message: 'Something went wrong' });
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="Enter your email"
+        required
+        className="h-12 sm:h-14 px-6 rounded-full bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 w-full sm:w-72"
+      />
+      <button 
+        type="submit" 
+        disabled={status.loading}
+        className="btn-primary h-12 sm:h-14 px-6 sm:px-8 rounded-full text-sm sm:text-base font-semibold disabled:opacity-70 disabled:cursor-not-allowed w-full sm:w-auto"
+      >
+        {status.loading ? 'Joining...' : 'Join Waitlist'}
+      </button>
+      {status.message && <p className="text-purple-400 text-sm mt-2 sm:mt-0 sm:ml-3">{status.message}</p>}
+    </form>
+  );
+}
 
 export default function Landing() {
   return (
@@ -84,14 +139,9 @@ export default function Landing() {
             No tabs. No filters. No mental math. Just clarity.
           </p>
 
-          {/* CTA */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center mb-4 sm:mb-6 px-4">
-            <Link to="/signup" className="w-full sm:w-auto">
-              <button className="btn-primary h-12 sm:h-14 px-6 sm:px-10 w-full sm:w-auto rounded-full text-sm sm:text-base font-semibold flex items-center justify-center gap-2 group touch-manipulation">
-                Start Free — No Credit Card
-                <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </Link>
+          {/* CTA - Waitlist Form */}
+          <div className="mb-4 sm:mb-6 px-4">
+            <WaitlistForm />
           </div>
           
           <p className="text-xs sm:text-sm text-[var(--text-muted)] mb-10 sm:mb-16 flex items-center justify-center gap-2">
